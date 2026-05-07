@@ -50,17 +50,20 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
     @Transactional
     public SubscriptionPlanResponseDto updatePlan(Long id, SubscriptionPlanRequestDto requestDto) {
         return subscriptionPlanRepository.findById(id).map(existingPlan -> {
-            // Actualizamos solo los campos de negocio necesarios
             existingPlan.setName(requestDto.getName());
             existingPlan.setMonthlyPrice(requestDto.getMonthlyPrice());
             existingPlan.setDeviceLimit(requestDto.getDeviceLimit());
             existingPlan.setSupportLevel(requestDto.getSupportLevel());
             existingPlan.setBillingCycle(requestDto.getBillingCycle());
 
+            // COMO NO HAY SECURITY AÚN, LO PONEMOS MANUAL:
+            existingPlan.setUpdatedBy("ADMIN_USER");
+
+            // Si el motor de auditoría (Punto 1) funciona,
+            // el updatedAt se llenará SOLO al ejecutar el .save()
             var updated = subscriptionPlanRepository.save(existingPlan);
-            log.info("Plan con ID {} actualizado correctamente", id);
             return subscriptionPlanMapper.toResponseDto(updated);
-        }).orElseThrow(() -> new RuntimeException("Subscription Plan not found with id: " + id));
+        }).orElseThrow(() -> new RuntimeException("Plan not found"));
     }
 
     @Override

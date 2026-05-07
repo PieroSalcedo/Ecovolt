@@ -1,5 +1,6 @@
 package upc.ecovolt.service.impl;
 
+import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.mapping.dto.userdto.UserMapper;
 import upc.ecovolt.mapping.dto.userdto.UserRequestDto;
 import upc.ecovolt.mapping.dto.userdto.UserResponseDto;
@@ -44,16 +45,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional // Agregado para asegurar integridad
     public UserResponseDto updateUser(Long id, UserRequestDto objUserRequestDto) {
-
-        return userRepository.findById(id).map(existingUser->{
+        return userRepository.findById(id).map(existingUser -> {
             existingUser.setFirstName(objUserRequestDto.getFirstName());
             existingUser.setLastName(objUserRequestDto.getLastName());
             existingUser.setEmail(objUserRequestDto.getEmail());
 
-            var updated= userRepository.save(existingUser);
+            // Auditoría manual temporal
+            existingUser.setUpdatedBy("ADMIN_USER");
+
+            var updated = userRepository.save(existingUser);
             return userMapper.toDto(updated);
-        }).orElseThrow(()-> new RuntimeException("User not found"));
+        }).orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
     @Override

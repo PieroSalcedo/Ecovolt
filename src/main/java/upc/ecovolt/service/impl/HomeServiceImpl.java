@@ -59,6 +59,9 @@ public class HomeServiceImpl implements HomeService {
             existingHome.setEnergyTariff(requestDto.getEnergyTariff());
             existingHome.setSquareMeters(requestDto.getSquareMeters());
 
+            // Auditoría manual temporal
+            existingHome.setUpdatedBy("ADMIN_USER");
+
             return homeMapper.toResponseDto(homeRepository.save(existingHome));
         }).orElseThrow(() -> new RuntimeException("Home not found with id: " + id));
     }

@@ -51,14 +51,16 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     @Transactional
     public DeviceResponseDto updateDevice(Long id, DeviceRequestDto requestDto) {
-        return deviceRepository.findById(id).map(existing -> {
-            existing.setName(requestDto.getName());
-            existing.setCategory(requestDto.getCategory());
-            existing.setManufacturer(requestDto.getManufacturer());
-            existing.setFirmwareVersion(requestDto.getFirmwareVersion());
-            // Nota: El serial_number usualmente no se cambia una vez registrado, pero se puede incluir si se desea.
+        return deviceRepository.findById(id).map(existingDevice -> {
+            existingDevice.setName(requestDto.getName());
+            existingDevice.setCategory(requestDto.getCategory());
+            existingDevice.setManufacturer(requestDto.getManufacturer());
+            existingDevice.setFirmwareVersion(requestDto.getFirmwareVersion());
 
-            return deviceMapper.toResponseDto(deviceRepository.save(existing));
+            // Auditoría manual temporal
+            existingDevice.setUpdatedBy("ADMIN_USER");
+
+            return deviceMapper.toResponseDto(deviceRepository.save(existingDevice));
         }).orElseThrow(() -> new RuntimeException("Device not found with id: " + id));
     }
 

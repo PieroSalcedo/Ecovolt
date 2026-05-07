@@ -58,6 +58,9 @@ public class RoomServiceImpl implements RoomService {
             existingRoom.setAreaSqm(requestDto.getAreaSqm());
             existingRoom.setRoomType(requestDto.getRoomType());
 
+            // Auditoría manual temporal
+            existingRoom.setUpdatedBy("ADMIN_USER");
+
             return roomMapper.toResponseDto(roomRepository.save(existingRoom));
         }).orElseThrow(() -> new RuntimeException("Room not found with id: " + id));
     }
