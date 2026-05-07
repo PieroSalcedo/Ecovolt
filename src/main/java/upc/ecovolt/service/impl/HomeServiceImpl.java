@@ -1,9 +1,9 @@
 package upc.ecovolt.service.impl;
 
 import upc.ecovolt.entity.Home;
-import upc.ecovolt.mapping.dto.homeDto.HomeMapper;
-import upc.ecovolt.mapping.dto.homeDto.HomeRequestDto;
-import upc.ecovolt.mapping.dto.homeDto.HomeResponseDto;
+import upc.ecovolt.mapping.dto.homedto.HomeMapper;
+import upc.ecovolt.mapping.dto.homedto.HomeRequestDto;
+import upc.ecovolt.mapping.dto.homedto.HomeResponseDto;
 import upc.ecovolt.repository.HomeRepository;
 import upc.ecovolt.repository.UserRepository;
 import upc.ecovolt.service.HomeService;

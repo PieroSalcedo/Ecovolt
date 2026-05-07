@@ -1,8 +1,8 @@
 package upc.ecovolt.service.impl;
 
-import upc.ecovolt.mapping.dto.userDto.UserMapper;
-import upc.ecovolt.mapping.dto.userDto.UserRequestDto;
-import upc.ecovolt.mapping.dto.userDto.UserResponseDto;
+import upc.ecovolt.mapping.dto.userdto.UserMapper;
+import upc.ecovolt.mapping.dto.userdto.UserRequestDto;
+import upc.ecovolt.mapping.dto.userdto.UserResponseDto;
 import upc.ecovolt.repository.UserRepository;
 import upc.ecovolt.service.UserService;
 import lombok.RequiredArgsConstructor;

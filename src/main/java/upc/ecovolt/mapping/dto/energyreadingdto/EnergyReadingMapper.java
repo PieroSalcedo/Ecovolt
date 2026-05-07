@@ -2,11 +2,15 @@ package upc.ecovolt.mapping.dto.energyreadingdto;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 import upc.ecovolt.entity.EnergyReading;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE // <--- IMPORTANTE
+)
 public interface EnergyReadingMapper {
 
     @Mapping(target = "deviceId", source = "device.id")

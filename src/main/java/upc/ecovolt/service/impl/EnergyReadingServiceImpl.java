@@ -1,9 +1,9 @@
 package upc.ecovolt.service.impl;
 
 import upc.ecovolt.entity.EnergyReading;
-import upc.ecovolt.mapping.dto.energyreadingDto.EnergyReadingMapper;
-import upc.ecovolt.mapping.dto.energyreadingDto.EnergyReadingRequestDto;
-import upc.ecovolt.mapping.dto.energyreadingDto.EnergyReadingResponseDto;
+import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingMapper;
+import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingRequestDto;
+import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingResponseDto;
 import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.EnergyReadingRepository;
 import upc.ecovolt.service.EnergyReadingService;

@@ -1,11 +1,16 @@
 package upc.ecovolt.mapping.dto.subscriptionplandto;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 import upc.ecovolt.entity.SubscriptionPlan;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE // <--- IMPORTANTE
+)
 public interface SubscriptionPlanMapper {
 
     // 1. De la base de datos hacia el Frontend (Para mostrar datos)

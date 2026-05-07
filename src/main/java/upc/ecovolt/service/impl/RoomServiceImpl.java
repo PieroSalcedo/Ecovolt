@@ -1,9 +1,9 @@
 package upc.ecovolt.service.impl;
 
 import upc.ecovolt.entity.Room;
-import upc.ecovolt.mapping.dto.roomDto.RoomMapper;
-import upc.ecovolt.mapping.dto.roomDto.RoomRequestDto;
-import upc.ecovolt.mapping.dto.roomDto.RoomResponseDto;
+import upc.ecovolt.mapping.dto.roomdto.RoomMapper;
+import upc.ecovolt.mapping.dto.roomdto.RoomRequestDto;
+import upc.ecovolt.mapping.dto.roomdto.RoomResponseDto;
 import upc.ecovolt.repository.HomeRepository;
 import upc.ecovolt.repository.RoomRepository;
 import upc.ecovolt.service.RoomService;

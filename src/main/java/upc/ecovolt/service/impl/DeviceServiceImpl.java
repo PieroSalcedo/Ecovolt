@@ -1,9 +1,9 @@
 package upc.ecovolt.service.impl;
 
 import upc.ecovolt.entity.Device;
-import upc.ecovolt.mapping.dto.deviceDto.DeviceMapper;
-import upc.ecovolt.mapping.dto.deviceDto.DeviceRequestDto;
-import upc.ecovolt.mapping.dto.deviceDto.DeviceResponseDto;
+import upc.ecovolt.mapping.dto.devicedto.DeviceMapper;
+import upc.ecovolt.mapping.dto.devicedto.DeviceRequestDto;
+import upc.ecovolt.mapping.dto.devicedto.DeviceResponseDto;
 import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.RoomRepository;
 import upc.ecovolt.service.DeviceService;
