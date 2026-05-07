@@ -1,7 +1,7 @@
 package upc.ecovolt.service;
 
-import upc.ecovolt.mapping.dto.userDto.UserRequestDto;
-import upc.ecovolt.mapping.dto.userDto.UserResponseDto;
+import upc.ecovolt.mapping.dto.userdto.UserRequestDto;
+import upc.ecovolt.mapping.dto.userdto.UserResponseDto;
 
 import java.util.List;
 import java.util.Optional;

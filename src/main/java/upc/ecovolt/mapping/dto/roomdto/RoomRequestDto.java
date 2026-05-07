@@ -1,4 +1,4 @@
-package upc.ecovolt.mapping.dto.roomDto;
+package upc.ecovolt.mapping.dto.roomdto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

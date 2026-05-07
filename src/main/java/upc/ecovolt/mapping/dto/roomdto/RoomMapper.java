@@ -1,4 +1,4 @@
-package upc.ecovolt.mapping.dto.roomDto;
+package upc.ecovolt.mapping.dto.roomdto;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

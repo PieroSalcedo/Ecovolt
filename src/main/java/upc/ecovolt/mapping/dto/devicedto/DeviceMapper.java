@@ -1,4 +1,4 @@
-package upc.ecovolt.mapping.dto.deviceDto;
+package upc.ecovolt.mapping.dto.devicedto;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

@@ -1,7 +1,7 @@
 package upc.ecovolt.service;
 
-import upc.ecovolt.mapping.dto.roomDto.RoomRequestDto;
-import upc.ecovolt.mapping.dto.roomDto.RoomResponseDto;
+import upc.ecovolt.mapping.dto.roomdto.RoomRequestDto;
+import upc.ecovolt.mapping.dto.roomdto.RoomResponseDto;
 
 import java.util.List;
 import java.util.Optional;

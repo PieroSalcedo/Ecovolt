@@ -1,4 +1,4 @@
-package upc.ecovolt.mapping.dto.userDto;
+package upc.ecovolt.mapping.dto.userdto;
 
 import lombok.Data;
 

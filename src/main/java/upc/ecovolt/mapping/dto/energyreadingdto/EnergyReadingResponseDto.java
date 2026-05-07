@@ -1,4 +1,4 @@
-package upc.ecovolt.mapping.dto.energyreadingDto;
+package upc.ecovolt.mapping.dto.energyreadingdto;
 
 import lombok.Data;
 

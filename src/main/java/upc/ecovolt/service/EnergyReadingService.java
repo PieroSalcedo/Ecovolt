@@ -1,7 +1,7 @@
 package upc.ecovolt.service;
 
-import upc.ecovolt.mapping.dto.energyreadingDto.EnergyReadingRequestDto;
-import upc.ecovolt.mapping.dto.energyreadingDto.EnergyReadingResponseDto;
+import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingRequestDto;
+import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingResponseDto;
 
 import java.util.List;
 import java.util.Optional;

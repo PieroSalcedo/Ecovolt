@@ -1,4 +1,4 @@
-package upc.ecovolt.mapping.dto.homeDto;
+package upc.ecovolt.mapping.dto.homedto;
 
 import lombok.Getter;
 import lombok.Setter;

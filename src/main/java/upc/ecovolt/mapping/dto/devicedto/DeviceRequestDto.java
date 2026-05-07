@@ -1,4 +1,4 @@
-package upc.ecovolt.mapping.dto.deviceDto;
+package upc.ecovolt.mapping.dto.devicedto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
