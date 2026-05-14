@@ -7,7 +7,10 @@ public class DeviceResponseDto {
     private Long id;
     private String serialNumber;
     private String name;
-    private String category;
+
+    /* Aquí el usuario verá "Climatización" o "Iluminación" */
+    private String categoryName;
+
     private String manufacturer;
     private String firmwareVersion;
     private Long roomId;

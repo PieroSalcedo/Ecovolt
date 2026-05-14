@@ -4,21 +4,19 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import upc.ecovolt.entity.SubscriptionPlan;
-
 import java.util.List;
 
-@Mapper(
-        componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE // <--- IMPORTANTE
-)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface SubscriptionPlanMapper {
 
-    // 1. De la base de datos hacia el Frontend (Para mostrar datos)
+    // ENTITY -> RESPONSE (Mostramos la descripción del catálogo)
+    @Mapping(target = "supportLevel", source = "supportLevel.description")
     SubscriptionPlanResponseDto toResponseDto(SubscriptionPlan entity);
 
-    // 2. Del Frontend hacia la base de datos (Para crear/guardar)
+    // REQUEST -> ENTITY (Ignoramos supportLevel porque se asignará por ID en el Service)
+    @Mapping(target = "supportLevel", ignore = true)
     SubscriptionPlan toEntity(SubscriptionPlanRequestDto requestDto);
 
-    // 3. Para listar todos los planes (Convierte la lista completa de una vez)
+    // Mapeo de listas para el listar todo
     List<SubscriptionPlanResponseDto> toResponseDtoList(List<SubscriptionPlan> entityList);
 }

@@ -5,9 +5,14 @@ import lombok.Data;
 @Data
 public class UserResponseDto {
     private Long id;
+    private String login;
     private String firstName;
     private String lastName;
     private String email;
-    private Long subscriptionPlanId;
+    private Integer subscriptionPlanId;
+
+    /* REGLA DE NEGOCIO: Mostrar información descriptiva al usuario */
+    private String subscriptionPlanName;
+
     private Integer status;
 }

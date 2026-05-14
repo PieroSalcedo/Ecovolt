@@ -1,5 +1,6 @@
 package upc.ecovolt.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,22 +17,51 @@ public class Device extends BaseEntity {
     @Column(name = "id_device")
     private Long id;
 
+    /*
+     * REGLA DE NEGOCIO: Identificador de Hardware Único (MAC Address / UUID).
+     * Es la llave natural que permite vincular el dispositivo físico con la nube.
+     * No se puede repetir en todo el ecosistema Ecovolt.
+     */
     @Column(name = "serial_number", nullable = false, unique = true, length = 100)
-    private String serialNumber; // El "DNI" del hardware (MAC Address o UUID)
+    private String serialNumber;
 
-    @Column(name = "device_name", nullable = false, length = 100)
-    private String name; // Ej: "Refrigeradora Principal"
+    /*
+     * REGLA DE NEGOCIO: Identificador amigable.
+     * Nombre que el usuario asigna (Ej: "Refrigeradora LG") para identificarlo en el dashboard.
+     */
+    @Column(name = "device_name", length = 100)
+    private String name;
 
-    @Column(name = "category", nullable = false, length = 50)
-    private String category; // Ej: "Climatización", "Iluminación", "Electrodomésticos"
+    /*
+     * REGLA DE NEGOCIO: Segmentación Energética (Estilo Profesor).
+     * Uso de DataCatalogo para clasificar en: 'Iluminación', 'Climatización', 'Línea Blanca'.
+     * Sirve para que el motor de IA de Ecovolt identifique qué categoría consume más.
+     */
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private DataCatalogo category;
 
-    @Column(name = "manufacturer", length = 50)
-    private String manufacturer; // Marca del equipo
+    /*
+     * REGLA DE NEGOCIO: Trazabilidad de Fabricante.
+     * Permite identificar si ciertas marcas presentan mayores fallos o consumo excesivo.
+     */
+    @Column(name = "manufacturer", length = 100)
+    private String manufacturer;
 
-    @Column(name = "firmware_version", length = 20)
+    /*
+     * REGLA DE NEGOCIO: Ciclo de vida de software del hardware.
+     * Permite gestionar actualizaciones remotas (OTA) y asegurar compatibilidad de protocolos.
+     */
+    @Column(name = "firmware_version", length = 50)
     private String firmwareVersion;
 
-    // RELACIÓN: Muchos dispositivos están en un mismo ambiente (Room)
+    /*
+     * REGLA DE NEGOCIO: Ubicación Contextual.
+     * Un dispositivo siempre debe estar ubicado en una habitación para calcular
+     * el consumo por áreas de la vivienda.
+     */
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_room", nullable = false)
     private Room room;

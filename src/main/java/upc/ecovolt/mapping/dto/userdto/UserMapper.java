@@ -6,21 +6,21 @@ import org.mapstruct.ReportingPolicy;
 import upc.ecovolt.entity.User;
 import java.util.List;
 
-// unmappedTargetPolicy = IGNORE evita warnings por los campos de auditoría de BaseEntity
 @Mapper(
         componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE // <--- IMPORTANTE
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public interface UserMapper {
 
-    // 1. Entity -> DTO: Mapeamos el ID del objeto SubscriptionPlan al Long del DTO
+    // ENTITY -> DTO
     @Mapping(target = "subscriptionPlanId", source = "subscriptionPlan.id")
+    @Mapping(target = "subscriptionPlanName", source = "subscriptionPlan.name") // <--- REGLA: Mapea el nombre del plan
     UserResponseDto toDto(User user);
 
-    // 2. DTO -> Entity: Mapeamos el Long del DTO al ID dentro del objeto SubscriptionPlan
+    // DTO -> ENTITY
     @Mapping(target = "subscriptionPlan.id", source = "subscriptionPlanId")
+    @Mapping(target = "password", ignore = true) // REGLA: La contraseña se encripta en el Service, no aquí
     User toEntity(UserRequestDto userRequestDto);
 
-    // 3. Mapeo de listas para el findAll
     List<UserResponseDto> toDtoList(List<User> userList);
 }

@@ -1,33 +1,46 @@
 package upc.ecovolt.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.springframework.data.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
-@Getter @Setter
-//@MappedSuperclass -> define una clase cuyas propiedades deben ser heredadas por las entidades que la extiendan
+@Getter
+@Setter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
 
-    @Column(name = "status",nullable = false)
+    @Column(name = "status", nullable = false)
     private Integer status = 1;
 
+    // Auditoría de Fechas (Formato igual al del profe para el JSON)
     @CreatedDate
-    @Column(name = "created_at",updatable = false)
-    private LocalDateTime createdAt;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "fecha_registro", updatable = false)
+    private LocalDateTime fechaRegistro;
 
     @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "fecha_actualizacion")
+    private LocalDateTime fechaActualizacion;
 
-    @Column(name = "created_by", length = 50)
-    private String createdBy = "SYSTEM";
+    // Auditoría de Usuarios (Nombres de columnas del script de Postgres)
+    @CreatedBy
+    @Column(name = "usuario_registro", length = 50, updatable = false)
+    private String usuarioRegistro = "SYSTEM";
 
-    @Column(name = "updated_by",length = 50)
-    private String updatedBy;
+    @LastModifiedBy
+    @Column(name = "usuario_actualizacion", length = 50)
+    private String usuarioActualizacion;
 
 }

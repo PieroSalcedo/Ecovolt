@@ -3,20 +3,22 @@ package upc.ecovolt.service;
 import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanRequestDto;
 import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanResponseDto;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 public interface SubscriptionPlanService {
+    // CRUD Básico
     List<SubscriptionPlanResponseDto> findAllPlans();
+    Optional<SubscriptionPlanResponseDto> findPlanById(Integer id);
+    SubscriptionPlanResponseDto savePlan(SubscriptionPlanRequestDto requestDto);
+    SubscriptionPlanResponseDto updatePlan(Integer id, SubscriptionPlanRequestDto requestDto);
+    void delete(Integer id);
 
-    // 2. El Optional ahora envuelve al DTO de respuesta
-    Optional<SubscriptionPlanResponseDto> findPlanById(Long id);
-
-    // 3. Recibimos los datos de creación (Request) y devolvemos el resultado limpio (Response)
-    SubscriptionPlanResponseDto savePlan(SubscriptionPlanRequestDto objSubRequestDto);
-
-    // 4. Para el update, recibimos el ID y el RequestDto
-    SubscriptionPlanResponseDto updatePlan(Long id, SubscriptionPlanRequestDto objSubRequestDto);
-
-    void delete(Long id);
+    // REGLAS DE NEGOCIO (Provenientes del Repositorio)
+    List<SubscriptionPlanResponseDto> findPlansByPriceRange(BigDecimal min, BigDecimal max);
+    List<SubscriptionPlanResponseDto> findBySupportLevelName(String supportLevel);
+    long countActiveUsersByPlan(Integer planId);
+    List<SubscriptionPlanResponseDto> findUpgradeOptions(Integer currentLimit);
+    Integer getDeviceLimitById(Integer planId);
 }

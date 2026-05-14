@@ -5,22 +5,27 @@ import lombok.Data;
 
 @Data
 public class UserRequestDto {
-    @NotBlank(message = "First name is required")
+
+    @NotBlank(message = "El nombre de usuario (login) es obligatorio")
     @Size(max = 50)
+    private String login; // REGLA DE SEGURIDAD: Necesario para el Auth
+
+    @NotBlank(message = "El nombre es obligatorio")
+    @Size(max = 100)
     private String firstName;
 
-    @NotBlank(message = "Last name is required")
-    @Size(max = 50)
+    @NotBlank(message = "El apellido es obligatorio")
+    @Size(max = 100)
     private String lastName;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "Formato de email inválido")
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
+    @NotBlank(message = "La contraseña es obligatoria")
+    @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     private String password;
 
-    @NotNull(message = "Subscription Plan ID is required")
-    private Long subscriptionPlanId;
+    @NotNull(message = "El ID del plan es obligatorio")
+    private Integer subscriptionPlanId; // Cambiado a Integer para coincidir con la entidad
 }

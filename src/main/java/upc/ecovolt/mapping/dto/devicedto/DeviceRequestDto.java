@@ -7,6 +7,11 @@ import lombok.Data;
 
 @Data
 public class DeviceRequestDto {
+
+    /*
+     * REGLA DE NEGOCIO: Identificador único de hardware (MAC/UUID).
+     * No puede cambiar una vez registrado para mantener la integridad de la telemetría.
+     */
     @NotBlank(message = "El número de serie es obligatorio")
     @Size(max = 100)
     private String serialNumber;
@@ -15,8 +20,12 @@ public class DeviceRequestDto {
     @Size(max = 100)
     private String name;
 
-    @NotBlank(message = "La categoría es obligatoria")
-    private String category; // Ej: "Climatización"
+    /*
+     * REGLA DE NEGOCIO: Categorización vía DataCatalogo.
+     * Recibimos el ID numérico del diccionario (Ej: Iluminación, IT, Climatización).
+     */
+    @NotNull(message = "El ID de la categoría es obligatorio")
+    private Integer categoryId;
 
     private String manufacturer;
 
