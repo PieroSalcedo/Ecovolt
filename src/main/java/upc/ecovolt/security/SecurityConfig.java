@@ -67,7 +67,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/users/register").permitAll()
 
                         // Swagger Público
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**", "/webjars/**").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
 
                         // Todo lo demás requiere estar Autenticado
                         .anyRequest().authenticated()
