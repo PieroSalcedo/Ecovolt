@@ -11,6 +11,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import upc.ecovolt.mapping.dto.ApiResponseDto; // Importante
 import upc.ecovolt.mapping.dto.auth.JwtResponseDto;
 import upc.ecovolt.mapping.dto.auth.LoginRequestDto;
 import upc.ecovolt.security.JwtProvider;
@@ -31,9 +32,9 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
 
-    @Operation(summary = "Iniciar sesión para obtener el token de acceso")
+    @Operation(summary = "Iniciar sesión", description = "Autentica al usuario y devuelve un mensaje de bienvenida con su token.")
     @PostMapping("/login")
-    public ResponseEntity<JwtResponseDto> login(@Valid @RequestBody LoginRequestDto loginDto) {
+    public ResponseEntity<ApiResponseDto<JwtResponseDto>> login(@Valid @RequestBody LoginRequestDto loginDto) {
         log.info("Intento de login para el usuario: {}", loginDto.getLogin());
 
         // 1. Autenticación con Spring Security
@@ -44,7 +45,7 @@ public class AuthController {
         // 2. Establecer el contexto de seguridad
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // 3. Generar el Token JWT oficial de Ecovolt
+        // 3. Generar el Token JWT
         String jwt = jwtProvider.generateToken(authentication);
 
         // 4. Obtener datos del usuario logueado
@@ -53,14 +54,22 @@ public class AuthController {
                 .map(auth -> auth.getAuthority())
                 .collect(Collectors.toList());
 
-        // 5. Devolver DTO estructurado (Mejor que un Map)
-        return ResponseEntity.ok(new JwtResponseDto(
+        // 5. Construir el objeto de datos (Token + Info)
+        JwtResponseDto jwtData = new JwtResponseDto(
                 jwt,
                 "Bearer",
                 principal.getIdUser(),
                 principal.getLogin(),
                 principal.getFullName(),
                 roles
-        ));
+        );
+
+        // 6. Retornar la Respuesta Enriquecida con Notificación
+        return ResponseEntity.ok(ApiResponseDto.<JwtResponseDto>builder()
+                .title("¡Inicio de Sesión Exitoso!")
+                .message("Bienvenido(a) " + principal.getFullName() + ". Acceso concedido al ecosistema EcoVolt.")
+                .status("SUCCESS")
+                .data(jwtData)
+                .build());
     }
 }
