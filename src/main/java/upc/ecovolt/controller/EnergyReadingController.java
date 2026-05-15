@@ -10,6 +10,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import upc.ecovolt.mapping.dto.ApiResponseDto;
 import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingRequestDto;
 import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingResponseDto;
 import upc.ecovolt.service.EnergyReadingService;
@@ -19,7 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Tag(name = "Energy Readings", description = "Endpoints para la captura de telemetría IoT y generación de analítica de consumo")
+@Tag(name = "Energy Readings", description = "Endpoints para la captura de telemetría IoT y generación de analítica avanzada (BI)")
 @RestController
 @RequestMapping("/api/v1/energy-readings")
 @RequiredArgsConstructor
@@ -28,65 +29,74 @@ public class EnergyReadingController {
 
     private final EnergyReadingService readingService;
 
-    @Operation(summary = "Registrar telemetría (IoT Gateway)", description = "Endpoint que reciben los sensores para enviar Wattage y Voltage en tiempo real")
+    // --- INGESTA DE DATOS (CON NOTIFICACIÓN) ---
+
+    @Operation(summary = "Registrar telemetría (IoT Gateway)",
+            description = "Recibe datos de potencia y voltaje. Valida que el sensor pertenezca al usuario.")
+    @ApiResponse(responseCode = "201", description = "Lectura procesada exitosamente")
     @PostMapping
-    public ResponseEntity<EnergyReadingResponseDto> create(@Valid @RequestBody EnergyReadingRequestDto request) {
-        return new ResponseEntity<>(readingService.saveReading(request), HttpStatus.CREATED);
+    public ResponseEntity<ApiResponseDto<EnergyReadingResponseDto>> create(@Valid @RequestBody EnergyReadingRequestDto request) {
+        var data = readingService.saveReading(request);
+
+        return new ResponseEntity<>(ApiResponseDto.<EnergyReadingResponseDto>builder()
+                .title("Telemetría Recibida")
+                .message("Datos del dispositivo registrados correctamente a las " + data.getCreatedAt().toLocalTime())
+                .status("SUCCESS")
+                .data(data)
+                .build(), HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Obtener historial completo", description = "Retorna todas las lecturas registradas (Uso administrativo)")
-    @GetMapping
-    public ResponseEntity<List<EnergyReadingResponseDto>> getAll() {
-        return ResponseEntity.ok(readingService.findAllReadings());
-    }
+    // --- ENDPOINTS DE ANALÍTICA (DATA PURA PARA GRÁFICOS) ---
 
-    // --- ENDPOINTS DE ANALÍTICA AVANZADA (EL VALOR DE ECOVOLT) ---
-
-    @Operation(summary = "Consumo acumulado por dispositivo", description = "Suma el wattage total de un equipo en un rango de tiempo para calcular costos")
-    @GetMapping("/analytics/device/{idDevice}/sum")
-    public ResponseEntity<BigDecimal> getSumByDevice(
-            @Parameter(description = "ID del equipo IoT", example = "1") @PathVariable Long idDevice,
-            @Parameter(description = "Fecha inicial", example = "2024-01-01T00:00:00") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @Parameter(description = "Fecha final", example = "2024-01-31T23:59:59") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-        return ResponseEntity.ok(readingService.sumWattageByDeviceAndPeriod(idDevice, start, end));
-    }
-
-    @Operation(summary = "Consumo total de la vivienda", description = "Suma toda la energía consumida en una propiedad completa")
+    @Operation(summary = "Consumo total de la vivienda",
+            description = "Suma toda la energía de una casa. Usado para el gráfico principal del Dashboard.")
     @GetMapping("/analytics/home/{idHome}/total")
     public ResponseEntity<BigDecimal> getTotalHomeConsumption(
             @Parameter(description = "ID de la vivienda", example = "1") @PathVariable Long idHome,
-            @Parameter(description = "Fecha inicial", example = "2024-05-01T00:00:00") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @Parameter(description = "Fecha final", example = "2024-05-31T23:59:59") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @Parameter(description = "Fecha inicio (ISO)", example = "2024-05-14T00:00:00")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @Parameter(description = "Fecha fin (ISO)", example = "2024-05-14T23:59:59")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
         return ResponseEntity.ok(readingService.sumTotalConsumptionByHome(idHome, start, end));
     }
 
-    @Operation(summary = "Analítica por Categoría (Pie Chart)", description = "Suma el consumo de una categoría (Ej: 'Climatización') para reportes de distribución")
+    @Operation(summary = "Distribución por Categoría (Pie Chart)",
+            description = "Permite saber cuánto se gasta en 'Iluminación', 'AC', etc. (Valor estratégico para DEVIDA)")
     @GetMapping("/analytics/home/{idHome}/category")
     public ResponseEntity<BigDecimal> getConsumptionByCategory(
             @Parameter(description = "ID de la vivienda", example = "1") @PathVariable Long idHome,
-            @Parameter(description = "Nombre de la categoría del DataCatalogo", example = "Lighting") @RequestParam String categoryName,
-            @Parameter(description = "Fecha inicial", example = "2024-05-01T00:00:00") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @Parameter(description = "Fecha final", example = "2024-05-31T23:59:59") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @Parameter(description = "Categoría del catálogo", example = "Climatización") @RequestParam String categoryName,
+            @Parameter(description = "Fecha inicio", example = "2024-05-14T00:00:00")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @Parameter(description = "Fecha fin", example = "2024-05-14T23:59:59")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
         return ResponseEntity.ok(readingService.sumConsumptionByCategory(idHome, categoryName, start, end));
     }
 
-    @Operation(summary = "Monitor en tiempo real", description = "Obtiene las últimas lecturas registradas de un dispositivo para dashboards vivos")
+    @Operation(summary = "Detección de consumos fantasma",
+            description = "Filtra lecturas que superan un umbral de ruido. Ayuda a identificar fugas eléctricas.")
+    @GetMapping("/device/{idDevice}/abnormal")
+    public ResponseEntity<List<EnergyReadingResponseDto>> getAbnormal(
+            @Parameter(description = "ID del sensor", example = "1") @PathVariable Long idDevice,
+            @Parameter(description = "Umbral de wattage (Watts)", example = "5.0") @RequestParam BigDecimal threshold) {
+        return ResponseEntity.ok(readingService.findAbnormalConsumption(idDevice, threshold));
+    }
+
+    @Operation(summary = "Monitor en tiempo real", description = "Últimas lecturas para velocímetros o indicadores en vivo.")
     @GetMapping("/device/{idDevice}/latest")
     public ResponseEntity<List<EnergyReadingResponseDto>> getLatest(@PathVariable Long idDevice) {
         return ResponseEntity.ok(readingService.findLatestReadingsByDevice(idDevice));
     }
 
-    @Operation(summary = "Detectar fugas / Consumo fantasma", description = "Busca lecturas que superen un umbral de ruido en periodos de inactividad")
-    @GetMapping("/device/{idDevice}/abnormal")
-    public ResponseEntity<List<EnergyReadingResponseDto>> getAbnormal(
-            @PathVariable Long idDevice,
-            @Parameter(description = "Wattage mínimo para considerar anomalía", example = "5.0") @RequestParam BigDecimal threshold) {
-        return ResponseEntity.ok(readingService.findAbnormalConsumption(idDevice, threshold));
-    }
-
-    @Operation(summary = "Promedio de Voltaje", description = "Analiza la estabilidad de la red eléctrica para proteger equipos")
+    @Operation(summary = "Estabilidad de Voltaje (Promedio)", description = "Analiza si la red eléctrica es estable (Soporte técnico).")
     @GetMapping("/device/{idDevice}/voltage-avg")
     public ResponseEntity<Double> getVoltageAvg(@PathVariable Long idDevice) {
         return ResponseEntity.ok(readingService.getAverageVoltageByDevice(idDevice));
+    }
+
+    @Operation(summary = "Historial Completo (Staff)", description = "AUDITOR ONLY: Lista todas las lecturas del sistema.")
+    @GetMapping
+    public ResponseEntity<List<EnergyReadingResponseDto>> getAll() {
+        return ResponseEntity.ok(readingService.findAllReadings());
     }
 }

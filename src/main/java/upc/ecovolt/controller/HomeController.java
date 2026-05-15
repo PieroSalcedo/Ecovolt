@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import upc.ecovolt.mapping.dto.ApiResponseDto;
 import upc.ecovolt.mapping.dto.homedto.HomeRequestDto;
 import upc.ecovolt.mapping.dto.homedto.HomeResponseDto;
 import upc.ecovolt.service.HomeService;
@@ -26,79 +27,90 @@ public class HomeController {
 
     private final HomeService homeService;
 
-    @Operation(summary = "Listar todas las viviendas registradas", description = "Retorna el historial completo de propiedades en el sistema")
+    // --- ACCIONES CON NOTIFICACIÓN (POST, PUT, DELETE) ---
+
+    @Operation(summary = "Registrar una nueva propiedad", description = "Crea una vivienda vinculándola al usuario autenticado.")
+    @ApiResponse(responseCode = "201", description = "Vivienda registrada exitosamente")
+    @PostMapping
+    public ResponseEntity<ApiResponseDto<HomeResponseDto>> create(@Valid @RequestBody HomeRequestDto request) {
+        var data = homeService.saveHome(request);
+
+        return new ResponseEntity<>(ApiResponseDto.<HomeResponseDto>builder()
+                .title("¡Vivienda Registrada!")
+                .message("La propiedad '" + data.getAlias() + "' ha sido vinculada correctamente a su cuenta.")
+                .status("SUCCESS")
+                .data(data)
+                .build(), HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Actualizar datos de la vivienda", description = "Permite modificar la dirección, el alias o la tarifa de consumo (kWh).")
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponseDto<HomeResponseDto>> update(
+            @Parameter(description = "ID de la vivienda a modificar", example = "1") @PathVariable Long id,
+            @Valid @RequestBody HomeRequestDto request) {
+
+        var data = homeService.updateHome(id, request);
+
+        return ResponseEntity.ok(ApiResponseDto.<HomeResponseDto>builder()
+                .title("Información Actualizada")
+                .message("Los cambios en '" + data.getAlias() + "' se guardaron con éxito.")
+                .status("SUCCESS")
+                .data(data)
+                .build());
+    }
+
+    @Operation(summary = "Eliminar una vivienda", description = "Retira la propiedad del sistema. Esta acción es irreversible.")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponseDto<Void>> delete(
+            @Parameter(description = "ID de la vivienda a eliminar", example = "1") @PathVariable Long id) {
+
+        homeService.delete(id);
+
+        return ResponseEntity.ok(ApiResponseDto.<Void>builder()
+                .title("Propiedad Eliminada")
+                .message("La vivienda y sus configuraciones asociadas han sido removidas del sistema.")
+                .status("SUCCESS")
+                .build());
+    }
+
+    // --- CONSULTAS DE DATOS (DATA DIRECTA) ---
+
+    @Operation(summary = "Listar todas las viviendas (Staff)", description = "ACCESO RESTRINGIDO: Solo Admin, Auditor y Analista.")
     @GetMapping
     public ResponseEntity<List<HomeResponseDto>> getAll() {
         return ResponseEntity.ok(homeService.findAllHomes());
     }
 
-    @Operation(summary = "Obtener una vivienda por su ID", description = "Busca la información técnica y tarifaria de una propiedad específica")
-    @ApiResponse(responseCode = "200", description = "Vivienda encontrada")
-    @ApiResponse(responseCode = "404", description = "Vivienda no existe")
+    @Operation(summary = "Obtener vivienda por ID", description = "Busca detalles técnicos de una propiedad.")
     @GetMapping("/{id}")
-    public ResponseEntity<HomeResponseDto> getById(
-            @Parameter(description = "ID único de la vivienda", example = "1")
-            @PathVariable Long id) {
+    public ResponseEntity<HomeResponseDto> getById(@PathVariable Long id) {
         return homeService.findHomeById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @Operation(summary = "Registrar una nueva propiedad", description = "Crea una vivienda vinculándola a un usuario y asignando un tipo (Casa, Dpto, etc.)")
-    @PostMapping
-    public ResponseEntity<HomeResponseDto> create(@Valid @RequestBody HomeRequestDto request) {
-        return new ResponseEntity<>(homeService.saveHome(request), HttpStatus.CREATED);
-    }
-
-    @Operation(summary = "Actualizar datos de la vivienda", description = "Modifica la dirección, alias o la tarifa eléctrica (kWh)")
-    @PutMapping("/{id}")
-    public ResponseEntity<HomeResponseDto> update(
-            @Parameter(description = "ID de la vivienda a modificar", example = "1")
-            @PathVariable Long id,
-            @Valid @RequestBody HomeRequestDto request) {
-        return ResponseEntity.ok(homeService.updateHome(id, request));
-    }
-
-    @Operation(summary = "Eliminar una vivienda", description = "Desactiva la propiedad del ecosistema Ecovolt")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @Parameter(description = "ID de la vivienda a eliminar", example = "10")
-            @PathVariable Long id) {
-        homeService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // --- ENDPOINTS DE INTELIGENCIA DE NEGOCIO ---
-
-    @Operation(summary = "Listar viviendas de un usuario", description = "Filtra todas las propiedades que pertenecen a un cliente específico")
+    @Operation(summary = "Listar viviendas por Usuario", description = "Obtiene todas las casas que pertenecen a un cliente específico.")
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<HomeResponseDto>> getByUser(
-            @Parameter(description = "ID del usuario dueño", example = "1")
-            @PathVariable Long userId) {
+    public ResponseEntity<List<HomeResponseDto>> getByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(homeService.findActiveHomesByUser(userId));
     }
 
-    @Operation(summary = "Auditoría de hardware por casa", description = "Retorna el conteo total de dispositivos IoT instalados en todas las habitaciones de la casa")
+    @Operation(summary = "Auditoría de hardware por casa", description = "Retorna el conteo total de dispositivos instalados en toda la casa.")
     @GetMapping("/{id}/device-count")
-    public ResponseEntity<Long> getDeviceCount(
-            @Parameter(description = "ID de la vivienda para el conteo", example = "1")
-            @PathVariable Long id) {
+    public ResponseEntity<Long> getDeviceCount(@PathVariable Long id) {
         return ResponseEntity.ok(homeService.countTotalDevicesByHome(id));
     }
 
-    @Operation(summary = "Filtrar por tarifa elevada", description = "Busca hogares cuya tarifa de energía supere un valor umbral para campañas de ahorro")
+    @Operation(summary = "Filtrar por tarifa elevada", description = "Analítica: Busca hogares con costos de energía críticos.")
     @GetMapping("/high-tariff")
-    public ResponseEntity<List<HomeResponseDto>> getByHighTariff(
-            @Parameter(description = "Precio kWh mínimo a filtrar", example = "0.65")
-            @RequestParam BigDecimal threshold) {
+    public ResponseEntity<List<HomeResponseDto>> getByHighTariff(@RequestParam BigDecimal threshold) {
         return ResponseEntity.ok(homeService.findHomesByHighTariff(threshold));
     }
 
-    @Operation(summary = "Búsqueda por Alias y Usuario", description = "Permite al usuario seleccionar su casa mediante un nombre amigable (Ej: 'Oficina')")
+    @Operation(summary = "Búsqueda por Alias", description = "Busca una propiedad por su nombre amigable.")
     @GetMapping("/search")
     public ResponseEntity<List<HomeResponseDto>> getByAlias(
-            @Parameter(description = "Alias de la propiedad", example = "Casa Playa") @RequestParam String alias,
-            @Parameter(description = "ID del usuario", example = "1") @RequestParam Long userId) {
+            @RequestParam String alias, @RequestParam Long userId) {
         return ResponseEntity.ok(homeService.findByAliasAndUserId(alias, userId));
     }
 }

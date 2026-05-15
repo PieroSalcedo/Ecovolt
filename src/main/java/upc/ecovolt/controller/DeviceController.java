@@ -8,8 +8,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import upc.ecovolt.mapping.dto.ApiResponseDto; // Importante
+import upc.ecovolt.mapping.dto.ApiResponseDto;
 import upc.ecovolt.mapping.dto.devicedto.DeviceRequestDto;
 import upc.ecovolt.mapping.dto.devicedto.DeviceResponseDto;
 import upc.ecovolt.service.DeviceService;
@@ -26,60 +27,61 @@ public class DeviceController {
 
     private final DeviceService deviceService;
 
-    // --- ACCIONES QUE GENERAN NOTIFICACIONES (POST, PUT, DELETE) ---
+    // --- ACCIONES CON NOTIFICACIÓN (POST, PUT, DELETE) ---
 
-    @Operation(summary = "Vincular nuevo dispositivo", description = "Registra un equipo y valida límites del plan.")
+    @Operation(summary = "Vincular nuevo dispositivo",
+            description = "RESTRICTED: Solo el dueño de la casa. Registra un equipo y valida límites del plan SaaS.")
+    @ApiResponse(responseCode = "201", description = "Dispositivo vinculado correctamente")
+    @ApiResponse(responseCode = "400", description = "Límite de plan excedido o serial duplicado")
     @PostMapping
     public ResponseEntity<ApiResponseDto<DeviceResponseDto>> create(@Valid @RequestBody DeviceRequestDto request) {
         var data = deviceService.saveDevice(request);
-
         return new ResponseEntity<>(ApiResponseDto.<DeviceResponseDto>builder()
                 .title("¡Registro Exitoso!")
-                .message("El dispositivo '" + data.getName() + "' ha sido vinculado a la red.")
+                .message("El equipo '" + data.getName() + "' ha sido vinculado a tu red de ahorro.")
                 .status("SUCCESS")
                 .data(data)
                 .build(), HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Actualizar dispositivo")
+    @Operation(summary = "Actualizar configuración del equipo",
+            description = "RESTRICTED: Solo el dueño. Permite actualizar nombre y firmware.")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponseDto<DeviceResponseDto>> update(
             @Parameter(description = "ID del dispositivo", example = "1") @PathVariable Long id,
             @Valid @RequestBody DeviceRequestDto request) {
 
         var data = deviceService.updateDevice(id, request);
-
         return ResponseEntity.ok(ApiResponseDto.<DeviceResponseDto>builder()
-                .title("Configuración Actualizada")
-                .message("Los cambios en el equipo " + data.getName() + " se guardaron correctamente.")
+                .title("Actualización Completa")
+                .message("La configuración de " + data.getName() + " se guardó con éxito.")
                 .status("SUCCESS")
                 .data(data)
                 .build());
     }
 
-    @Operation(summary = "Eliminar un dispositivo")
+    @Operation(summary = "Eliminar un dispositivo", description = "RESTRICTED: Solo el dueño. Acción irreversible.")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseDto<Void>> delete(
-            @Parameter(description = "ID del dispositivo", example = "2") @PathVariable Long id) {
+            @Parameter(description = "ID del dispositivo a eliminar", example = "2") @PathVariable Long id) {
 
         deviceService.delete(id);
-
         return ResponseEntity.ok(ApiResponseDto.<Void>builder()
                 .title("Dispositivo Removido")
-                .message("El equipo ha sido desconectado y eliminado del inventario.")
+                .message("El equipo ha sido desconectado del sistema permanentemente.")
                 .status("SUCCESS")
                 .build());
     }
 
-    // --- MÉTODOS DE CONSULTA (DATA DIRECTA) ---
+    // --- CONSULTAS Y ANALÍTICA (DATA DIRECTA) ---
 
-    @Operation(summary = "Listar todos los dispositivos")
+    @Operation(summary = "Listar todos los dispositivos", description = "ADMIN/SUPPORT ONLY: Auditoría global de hardware.")
     @GetMapping
     public ResponseEntity<List<DeviceResponseDto>> getAll() {
         return ResponseEntity.ok(deviceService.findAllDevices());
     }
 
-    @Operation(summary = "Obtener un dispositivo por ID")
+    @Operation(summary = "Obtener un dispositivo por ID", description = "ACCESO POR PROPIEDAD: Detalles técnicos del sensor.")
     @GetMapping("/{id}")
     public ResponseEntity<DeviceResponseDto> getById(@PathVariable Long id) {
         return deviceService.findDeviceById(id)
@@ -87,25 +89,27 @@ public class DeviceController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @Operation(summary = "Buscar por Número de Serie")
+    @Operation(summary = "Buscar por Número de Serie", description = "Utilizado para vinculación rápida vía QR o UUID.")
     @GetMapping("/serial/{serialNumber}")
-    public ResponseEntity<DeviceResponseDto> getBySerial(@PathVariable String serialNumber) {
+    public ResponseEntity<DeviceResponseDto> getBySerial(
+            @Parameter(description = "Número de serie único", example = "SN-LIG-001") @PathVariable String serialNumber) {
         return deviceService.findBySerialNumber(serialNumber)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @Operation(summary = "Listar dispositivos de una vivienda")
+    @Operation(summary = "Listar dispositivos de una vivienda", description = "Muestra todo el ecosistema IoT de una propiedad.")
     @GetMapping("/home/{homeId}")
     public ResponseEntity<List<DeviceResponseDto>> getByHome(@PathVariable Long homeId) {
         return ResponseEntity.ok(deviceService.findByHomeId(homeId));
     }
 
-    @Operation(summary = "Estado de salud de dispositivos por usuario")
+    @Operation(summary = "Auditoría de salud por usuario",
+            description = "SUPPORT ONLY: Cuenta equipos en estado de falla o activos para soporte técnico.")
     @GetMapping("/status-count")
     public ResponseEntity<Long> getStatusCount(
-            @RequestParam Long userId,
-            @RequestParam Integer status) {
+            @Parameter(description = "ID del usuario a auditar", example = "6") @RequestParam Long userId,
+            @Parameter(description = "1: Activo, 0: Inactivo, 2: Falla", example = "1") @RequestParam Integer status) {
         return ResponseEntity.ok(deviceService.countByUserIdAndStatus(userId, status));
     }
 }
