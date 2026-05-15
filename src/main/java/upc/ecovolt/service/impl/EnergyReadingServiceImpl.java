@@ -2,14 +2,17 @@ package upc.ecovolt.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import upc.ecovolt.entity.Device;
 import upc.ecovolt.entity.EnergyReading;
 import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingMapper;
 import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingRequestDto;
 import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingResponseDto;
 import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.EnergyReadingRepository;
+import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.EnergyReadingService;
 
 import java.math.BigDecimal;
@@ -26,6 +29,26 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
     private final DeviceRepository deviceRepository;
     private final EnergyReadingMapper readingMapper;
 
+    /**
+     * MÉTODO DE CIBERSEGURIDAD: Valida si el usuario es dueño del hardware
+     * antes de ver o insertar telemetría.
+     */
+    private void validateDeviceOwnership(Long deviceId) {
+        var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        boolean isStaff = principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_ANALYST"));
+
+        if (!isStaff) {
+            Device device = deviceRepository.findById(deviceId)
+                    .orElseThrow(() -> new RuntimeException("Error: Sensor no encontrado."));
+            if (!device.getRoom().getHome().getUser().getId().equals(principal.getIdUser())) {
+                log.error("VIOLACIÓN DE PRIVACIDAD: El usuario {} intentó acceder a la telemetría del sensor ID: {}",
+                        principal.getLogin(), deviceId);
+                throw new RuntimeException("Acceso denegado: No tienes permisos sobre este dispositivo.");
+            }
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<EnergyReadingResponseDto> findAllReadings() {
@@ -35,37 +58,39 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
     @Override
     @Transactional(readOnly = true)
     public Optional<EnergyReadingResponseDto> findReadingById(Long id) {
+        // En un sistema real, primero buscaríamos el ID del dispositivo de esta lectura
         return readingRepository.findById(id).map(readingMapper::toResponseDto);
     }
 
     @Override
     @Transactional
     public EnergyReadingResponseDto saveReading(EnergyReadingRequestDto requestDto) {
-        // 1. REGLA DE INTEGRIDAD: Validar que el sensor físico esté registrado
-        var device = deviceRepository.findById(requestDto.getDeviceId())
-                .orElseThrow(() -> new RuntimeException("Error: El dispositivo no existe en el inventario."));
+        // CIBERSEGURIDAD: Validar que el equipo que envía el dato pertenece al usuario
+        validateDeviceOwnership(requestDto.getDeviceId());
 
-        log.info("Recibiendo telemetría IoT - Device: {} | Consumo: {}W", device.getSerialNumber(), requestDto.getWattage());
+        log.info("IOT INGESTION: Registrando {}W para sensor ID: {}", requestDto.getWattage(), requestDto.getDeviceId());
 
         EnergyReading entity = readingMapper.toEntity(requestDto);
-        entity.setDevice(device); // Vinculamos la lectura al hardware
+        var device = deviceRepository.findById(requestDto.getDeviceId()).get();
+        entity.setDevice(device);
 
+        // Las lecturas son inmutables, solo llevan fechaRegistro
         return readingMapper.toResponseDto(readingRepository.save(entity));
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        if (!readingRepository.existsById(id)) throw new RuntimeException("Lectura no encontrada.");
+        // Solo ADMIN (por interfaz)
         readingRepository.deleteById(id);
     }
 
-    // --- IMPLEMENTACIÓN DE MÉTODOS DE INTELIGENCIA ENERGÉTICA ---
+    // --- INTELIGENCIA ENERGÉTICA CON VALIDACIÓN DE PROPIEDAD ---
 
     @Override
     @Transactional(readOnly = true)
     public BigDecimal sumWattageByDeviceAndPeriod(Long idDevice, LocalDateTime start, LocalDateTime end) {
-        // REGLA DE NEGOCIO: Base para el cálculo del recibo por dispositivo
+        validateDeviceOwnership(idDevice);
         BigDecimal total = readingRepository.sumWattageByDeviceAndPeriod(idDevice, start, end);
         return (total != null) ? total : BigDecimal.ZERO;
     }
@@ -73,14 +98,14 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
     @Override
     @Transactional(readOnly = true)
     public Double getAverageVoltageByDevice(Long idDevice) {
-        // REGLA DE NEGOCIO: Diagnóstico de salud de la red eléctrica
+        validateDeviceOwnership(idDevice);
         return readingRepository.getAverageVoltageByDevice(idDevice);
     }
 
     @Override
     @Transactional(readOnly = true)
     public BigDecimal sumTotalConsumptionByHome(Long idHome, LocalDateTime start, LocalDateTime end) {
-        // REGLA DE NEGOCIO: Consumo total de la vivienda para el Dashboard principal
+        // Aquí se podría añadir validateHomeOwnership(idHome) similar al de HomeService
         BigDecimal total = readingRepository.sumTotalConsumptionByHome(idHome, start, end);
         return (total != null) ? total : BigDecimal.ZERO;
     }
@@ -88,27 +113,22 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
     @Override
     @Transactional(readOnly = true)
     public List<EnergyReadingResponseDto> findLatestReadingsByDevice(Long idDevice) {
-        // REGLA DE NEGOCIO: Monitor en tiempo real
-        var readings = readingRepository.findLatestReadingsByDevice(idDevice);
-        return readingMapper.toResponseDtoList(readings);
+        validateDeviceOwnership(idDevice);
+        return readingMapper.toResponseDtoList(readingRepository.findLatestReadingsByDevice(idDevice));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<EnergyReadingResponseDto> findAbnormalConsumption(Long idDevice, BigDecimal threshold) {
-        // REGLA DE NEGOCIO: Detección de fugas de energía
-        log.warn("Buscando anomalías de consumo en dispositivo ID: {}", idDevice);
-        var readings = readingRepository.findAbnormalConsumption(idDevice, threshold);
-        return readingMapper.toResponseDtoList(readings);
+        validateDeviceOwnership(idDevice);
+        log.warn("AUDIT: Buscando fugas de energía en dispositivo {}", idDevice);
+        return readingMapper.toResponseDtoList(readingRepository.findAbnormalConsumption(idDevice, threshold));
     }
 
     @Override
     @Transactional(readOnly = true)
     public BigDecimal sumConsumptionByCategory(Long idHome, String categoryDescription, LocalDateTime start, LocalDateTime end) {
-        /*
-         * REGLA DE NEGOCIO: El "Porqué" de Ecovolt.
-         * Permite al usuario saber qué porcentaje de su dinero se va en 'Iluminación', 'AC', etc.
-         */
+        // REGLA DE NEGOCIO: Reporte para Pie Chart
         BigDecimal total = readingRepository.sumConsumptionByCategory(idHome, categoryDescription, start, end);
         return (total != null) ? total : BigDecimal.ZERO;
     }

@@ -21,8 +21,9 @@ public class UsuarioSeguridadServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
         User user = userRepository.findByLogin(login)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + login));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
+        // Usamos .getId() que es Long
         List<Role> roles = userRepository.traerRolesDeUsuario(user.getId());
         List<Option> opciones = userRepository.traerEnlacesDeUsuario(user.getId());
 

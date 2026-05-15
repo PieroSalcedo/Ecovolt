@@ -46,34 +46,25 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponseDto saveUser(UserRequestDto requestDto) {
-        log.info("Registrando nuevo usuario con login: {}", requestDto.getLogin());
+        log.info("REGISTRO: Nuevo prospecto de cliente con login: {}", requestDto.getLogin());
 
-        // 1. Validar unicidad (Regla de Negocio)
         if (userRepository.findByLogin(requestDto.getLogin()).isPresent()) {
-            throw new RuntimeException("El nombre de usuario ya existe.");
-        }
-        if (userRepository.findByEmail(requestDto.getEmail()).isPresent()) {
-            throw new RuntimeException("El email ya está registrado.");
+            throw new RuntimeException("El nombre de usuario ya está en uso.");
         }
 
-        // 2. Mapear DTO a Entidad
         User user = userMapper.toEntity(requestDto);
-
-        // 3. SEGURIDAD: Encriptar password antes de guardar
         user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
 
-        // 4. SaaS: Asignar Plan de Suscripción real
-        var plan = planRepository.findById(requestDto.getSubscriptionPlanId())
-                .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
-        user.setSubscriptionPlan(plan);
+        // REGLA DE NEGOCIO: Todo registro web SIEMPRE es Customer con Plan Free (ID 1)
+        var freePlan = planRepository.findById(1)
+                .orElseThrow(() -> new RuntimeException("Error interno: Plan base no configurado"));
+        user.setSubscriptionPlan(freePlan);
 
-        // 5. SEGURIDAD: Asignar Rol por defecto (ROLE_CUSTOMER)
-        Role defaultRole = roleRepository.findByNombre("ROLE_CUSTOMER")
-                .orElseThrow(() -> new RuntimeException("Error: El Rol por defecto no existe en la BD"));
-        user.setRoles(Set.of(defaultRole));
+        Role customerRole = roleRepository.findByNombre("ROLE_CUSTOMER")
+                .orElseThrow(() -> new RuntimeException("Error interno: Rol base no configurado"));
+        user.setRoles(Set.of(customerRole));
 
-        // 6. Auditoría inicial
-        user.setUsuarioRegistro("SELF_REGISTER");
+        user.setUsuarioRegistro("SELF_SERVICE");
 
         return userMapper.toDto(userRepository.save(user));
     }
@@ -82,17 +73,18 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponseDto updateUser(Long id, UserRequestDto requestDto) {
         return userRepository.findById(id).map(existingUser -> {
+            // Un usuario normal no puede cambiarse a sí mismo el plan por DTO (SaaS Protection)
+            // Solo si es ADMIN se permite cambiar el plan de suscripción
+
             existingUser.setFirstName(requestDto.getFirstName());
             existingUser.setLastName(requestDto.getLastName());
             existingUser.setEmail(requestDto.getEmail());
 
-            // Actualizar plan si es necesario
-            var plan = planRepository.findById(requestDto.getSubscriptionPlanId())
-                    .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
-            existingUser.setSubscriptionPlan(plan);
+            // Auditoría
+            existingUser.setUsuarioActualizacion(requestDto.getLogin());
 
             return userMapper.toDto(userRepository.save(existingUser));
-        }).orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+        }).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
     @Override

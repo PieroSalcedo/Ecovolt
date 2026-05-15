@@ -1,8 +1,10 @@
 package upc.ecovolt.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import upc.ecovolt.entity.Option;
 import upc.ecovolt.mapping.dto.optiondto.OptionMapper;
 import upc.ecovolt.mapping.dto.optiondto.OptionRequestDto;
 import upc.ecovolt.mapping.dto.optiondto.OptionResponseDto;
@@ -13,6 +15,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OptionServiceImpl implements OptionService {
 
     private final OptionRepository optionRepository;
@@ -27,7 +30,24 @@ public class OptionServiceImpl implements OptionService {
     @Override
     @Transactional
     public OptionResponseDto save(OptionRequestDto requestDto) {
-        var entity = optionMapper.toEntity(requestDto);
+        // 1. REGLA DE NEGOCIO: Normalización de rutas
+        String ruta = requestDto.getRuta().trim();
+        if (!ruta.startsWith("/")) {
+            ruta = "/" + ruta;
+        }
+
+        // 2. VALIDACIÓN: Evitar colisión de rutas en el Frontend
+        if (!optionRepository.findByRuta(ruta).isEmpty()) {
+            log.error("CONFIG ERROR: Ya existe una opción registrada con la ruta {}", ruta);
+            throw new RuntimeException("Error: La ruta de navegación ya está asignada a otra opción.");
+        }
+
+        log.info("SISTEMA: Registrando nueva funcionalidad de interfaz: {}", requestDto.getNombre());
+
+        Option entity = optionMapper.toEntity(requestDto);
+        entity.setRuta(ruta);
+        entity.setEstado(1);
+
         return optionMapper.toResponseDto(optionRepository.save(entity));
     }
 

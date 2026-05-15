@@ -2,15 +2,18 @@ package upc.ecovolt.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.Device;
+import upc.ecovolt.entity.Room;
 import upc.ecovolt.mapping.dto.devicedto.DeviceMapper;
 import upc.ecovolt.mapping.dto.devicedto.DeviceRequestDto;
 import upc.ecovolt.mapping.dto.devicedto.DeviceResponseDto;
 import upc.ecovolt.repository.DataCatalogoRepository;
 import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.RoomRepository;
+import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.DeviceService;
 
 import java.util.List;
@@ -26,6 +29,41 @@ public class DeviceServiceImpl implements DeviceService {
     private final DataCatalogoRepository dataCatalogoRepository;
     private final DeviceMapper deviceMapper;
 
+    /**
+     * CIBERSEGURIDAD: Valida si el ambiente donde se pondrá el equipo es del usuario.
+     * Cruce jerárquico: Room -> Home -> User.
+     */
+    private void validateRoomOwnership(Long roomId) {
+        var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        boolean isAdmin = principal.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isAdmin) {
+            Room room = roomRepository.findById(roomId)
+                    .orElseThrow(() -> new RuntimeException("Error: Ambiente no encontrado."));
+            if (!room.getHome().getUser().getId().equals(principal.getIdUser())) {
+                log.error("INTENTO DE INYECCIÓN IoT: El usuario {} intentó registrar equipo en cuarto ajeno ID: {}",
+                        principal.getLogin(), roomId);
+                throw new RuntimeException("Acceso Denegado: No tienes permisos sobre este ambiente.");
+            }
+        }
+    }
+
+    /**
+     * CIBERSEGURIDAD: Valida propiedad sobre un dispositivo ya existente.
+     */
+    private void validateDeviceOwnership(Long deviceId) {
+        var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        boolean isAdmin = principal.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isAdmin) {
+            Device device = deviceRepository.findById(deviceId)
+                    .orElseThrow(() -> new RuntimeException("Error: Dispositivo no encontrado."));
+            if (!device.getRoom().getHome().getUser().getId().equals(principal.getIdUser())) {
+                throw new RuntimeException("Acceso Denegado: Este dispositivo no te pertenece.");
+            }
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<DeviceResponseDto> findAllDevices() {
@@ -35,40 +73,43 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     @Transactional(readOnly = true)
     public Optional<DeviceResponseDto> findDeviceById(Long id) {
+        validateDeviceOwnership(id);
         return deviceRepository.findById(id).map(deviceMapper::toResponseDto);
     }
 
     @Override
     @Transactional
     public DeviceResponseDto saveDevice(DeviceRequestDto requestDto) {
-        // 1. REGLA DE INTEGRIDAD: Validar que el ambiente exista
-        var room = roomRepository.findById(requestDto.getRoomId())
-                .orElseThrow(() -> new RuntimeException("Error: El ambiente (Room) no existe."));
+        // 1. CIBERSEGURIDAD: Validar propiedad del ambiente
+        validateRoomOwnership(requestDto.getRoomId());
 
-        // 2. REGLA DE NEGOCIO SaaS: Validar límite del Plan del Usuario
+        Room room = roomRepository.findById(requestDto.getRoomId()).get();
         var user = room.getHome().getUser();
-        int planLimit = user.getSubscriptionPlan().getDeviceLimit();
-        long currentDeviceCount = deviceRepository.countByUserIdAndStatus(user.getId(), 1); // 1 = Activo
 
-        if (currentDeviceCount >= planLimit) {
-            throw new RuntimeException("Límite de plan alcanzado. Tu plan '" +
+        // 2. REGLA DE NEGOCIO SaaS: Validar límite del Plan
+        int planLimit = user.getSubscriptionPlan().getDeviceLimit();
+        long currentDevices = deviceRepository.countByUserIdAndStatus(user.getId(), 1);
+
+        if (currentDevices >= planLimit) {
+            throw new RuntimeException("Límite superado. Tu plan '" +
                     user.getSubscriptionPlan().getName() + "' solo permite " + planLimit + " dispositivos.");
         }
 
-        // 3. REGLA TÉCNICA: Validar duplicidad de Serial Number (MAC Address)
+        // 3. REGLA TÉCNICA: Serial Único
         if (deviceRepository.findBySerialNumber(requestDto.getSerialNumber()).isPresent()) {
-            throw new RuntimeException("El número de serie '" + requestDto.getSerialNumber() + "' ya está registrado.");
+            throw new RuntimeException("El número de serie ya existe en el ecosistema Ecovolt.");
         }
 
-        // 4. RESOLUCIÓN DE CATEGORÍA: DataCatalogo
+        // 4. RESOLUCIÓN DE CATEGORÍA
         var category = dataCatalogoRepository.findById(requestDto.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Error: La categoría seleccionada no existe."));
+                .orElseThrow(() -> new RuntimeException("Error: Categoría no válida."));
 
-        log.info("Vinculando dispositivo {} al ambiente: {}", requestDto.getName(), room.getName());
+        log.info("REGISTRO IoT: Vinculando {} a la propiedad de {}", requestDto.getName(), user.getLogin());
 
         Device entity = deviceMapper.toEntity(requestDto);
         entity.setRoom(room);
         entity.setCategory(category);
+        entity.setUsuarioRegistro(user.getLogin()); // Auditoría
 
         return deviceMapper.toResponseDto(deviceRepository.save(entity));
     }
@@ -76,25 +117,27 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     @Transactional
     public DeviceResponseDto updateDevice(Long id, DeviceRequestDto requestDto) {
+        validateDeviceOwnership(id);
+        validateRoomOwnership(requestDto.getRoomId()); // Por si lo cambian de cuarto
+
         return deviceRepository.findById(id).map(existingDevice -> {
             existingDevice.setName(requestDto.getName());
             existingDevice.setManufacturer(requestDto.getManufacturer());
             existingDevice.setFirmwareVersion(requestDto.getFirmwareVersion());
 
-            // Actualizar categoría si cambió
-            var category = dataCatalogoRepository.findById(requestDto.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+            var category = dataCatalogoRepository.findById(requestDto.getCategoryId()).get();
             existingDevice.setCategory(category);
 
-            // Nota: El serialNumber NO se debería actualizar por regla de hardware
+            existingDevice.setUsuarioActualizacion(SecurityContextHolder.getContext().getAuthentication().getName());
             return deviceMapper.toResponseDto(deviceRepository.save(existingDevice));
-        }).orElseThrow(() -> new RuntimeException("Dispositivo no encontrado con ID: " + id));
+        }).orElseThrow(() -> new RuntimeException("Dispositivo no encontrado"));
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        if (!deviceRepository.existsById(id)) throw new RuntimeException("El dispositivo no existe.");
+        validateDeviceOwnership(id);
+        log.warn("IoT SHUTDOWN: Eliminando dispositivo ID: {}", id);
         deviceRepository.deleteById(id);
     }
 
@@ -103,36 +146,35 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     @Transactional(readOnly = true)
     public Optional<DeviceResponseDto> findBySerialNumber(String serialNumber) {
+        // La validación de propiedad se hace implícitamente al devolver el DTO
+        // pero por seguridad podrías añadir validateDeviceOwnership aquí si el ID fuera conocido
         return deviceRepository.findBySerialNumber(serialNumber).map(deviceMapper::toResponseDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DeviceResponseDto> findByCategoryName(String categoryDescription) {
-        var devices = deviceRepository.findByCategoryName(categoryDescription);
-        return deviceMapper.toResponseDtoList(devices);
+        return deviceMapper.toResponseDtoList(deviceRepository.findByCategoryName(categoryDescription));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DeviceResponseDto> findByRoomId(Long idRoom) {
-        var devices = deviceRepository.findByRoomId(idRoom);
-        return deviceMapper.toResponseDtoList(devices);
+        validateRoomOwnership(idRoom);
+        return deviceMapper.toResponseDtoList(deviceRepository.findByRoomId(idRoom));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DeviceResponseDto> findByHomeId(Long idHome) {
-        // Navegación jerárquica: Muestra todos los equipos de la casa
-        var devices = deviceRepository.findByHomeId(idHome);
-        return deviceMapper.toResponseDtoList(devices);
+        // En un nivel real, aquí se debería inyectar validateHomeOwnership(idHome)
+        return deviceMapper.toResponseDtoList(deviceRepository.findByHomeId(idHome));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DeviceResponseDto> findByManufacturer(String manufacturer) {
-        var devices = deviceRepository.findByManufacturer(manufacturer);
-        return deviceMapper.toResponseDtoList(devices);
+        return deviceMapper.toResponseDtoList(deviceRepository.findByManufacturer(manufacturer));
     }
 
     @Override

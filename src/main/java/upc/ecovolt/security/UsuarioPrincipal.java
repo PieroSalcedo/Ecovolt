@@ -25,16 +25,16 @@ public class UsuarioPrincipal implements UserDetails {
     private List<Option> opciones;
 
     public static UsuarioPrincipal build(User user, List<Role> roles, List<Option> opciones) {
-        // REGLA DE NEGOCIO: Convertimos tus entidades 'Role' a GrantedAuthority de Spring Security
         List<GrantedAuthority> authorities = roles.stream()
-                .map(rol -> new SimpleGrantedAuthority(rol.getNombre()))
+                .map(rol -> new SimpleGrantedAuthority(rol.getNombre().startsWith("ROLE_")
+                        ? rol.getNombre() : "ROLE_" + rol.getNombre()))
                 .collect(Collectors.toList());
 
         return new UsuarioPrincipal(
                 user.getId(),
                 user.getLogin(),
                 user.getPassword(),
-                user.getFullName(),
+                user.getFullName(), // Usamos el método de la entidad
                 authorities,
                 opciones);
     }

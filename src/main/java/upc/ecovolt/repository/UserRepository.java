@@ -25,22 +25,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Cruza las tablas mediante las clases de ID embebido para obtener los menús permitidos.
      * Nota: 'ro.id' mapea a RoleHasOptionPK y 'ur.usuarioHasRolPk' a UsuarioHasRolPK.
      */
-    @Query("select o from Option o, RoleHasOption ro, Role r, UsuarioHasRol ur " +
-            "where o.idOption = ro.id.idOption " +
-            "and ro.id.idRol = r.idRol " +
-            "and r.idRol = ur.usuarioHasRolPk.idRol " +
-            "and ur.usuarioHasRolPk.idUser = ?1 " +
-            "and o.estado = 1")
+    @Query("SELECT o FROM Option o " +
+            "JOIN RoleHasOption ro ON o.idOption = ro.id.idOption " +
+            "JOIN UsuarioHasRol ur ON ro.id.idRol = ur.usuarioHasRolPk.idRol " +
+            "WHERE ur.usuarioHasRolPk.idUser = ?1")
     List<Option> traerEnlacesDeUsuario(Long idUser);
 
     /*
      * REGLA DE SEGURIDAD: Autorización.
      * Obtiene los roles del usuario cruzando con la tabla intermedia.
      */
-    @Query("select r from Role r, UsuarioHasRol ur " +
-            "where r.idRol = ur.usuarioHasRolPk.idRol " +
-            "and ur.usuarioHasRolPk.idUser = ?1 " +
-            "and r.estado = 1")
+    @Query("SELECT r FROM Role r JOIN UsuarioHasRol ur ON r.idRol = ur.usuarioHasRolPk.idRol WHERE ur.usuarioHasRolPk.idUser = ?1")
     List<Role> traerRolesDeUsuario(Long idUser);
 
     /*

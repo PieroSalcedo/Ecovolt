@@ -14,7 +14,7 @@ public class EncoderPassword {
 
         // REGLA DE NEGOCIO: Nunca guardar contraseñas en texto plano.
         // Generamos un hash para el usuario administrador de prueba
-        String passwordPlano = "piero";
+        String passwordPlano = "romeo";
 
         String encodedPassword = encoder.encode(passwordPlano);
 

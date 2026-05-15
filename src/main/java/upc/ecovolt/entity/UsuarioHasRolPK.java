@@ -17,9 +17,9 @@ public class UsuarioHasRolPK implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Column(name = "id_user")
-    private int idUser;
+    private Long idUser;
 
     @Column(name = "id_rol")
-    private int idRol;
+    private Integer idRol;
 
 }

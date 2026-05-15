@@ -41,15 +41,24 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
     @Override
     @Transactional
     public SubscriptionPlanResponseDto savePlan(SubscriptionPlanRequestDto requestDto) {
-        log.info("Creando nuevo plan de suscripción: {}", requestDto.getName());
+        log.info("STAFF OPERATION: Creando nuevo plan de negocio: {}", requestDto.getName());
 
+        // 1. DTO -> Entity
         SubscriptionPlan entity = subscriptionPlanMapper.toEntity(requestDto);
 
-        // REGLA TÉCNICA: Buscamos el DataCatalogo por el ID que viene en el DTO
+        // 2. REGLA DE INTEGRIDAD: Resolvemos el objeto real de DataCatalogo
+        // No guardamos un número, buscamos el "Nivel de Soporte" real en el diccionario
         var supportLevel = dataCatalogoRepository.findById(requestDto.getSupportLevelId())
-                .orElseThrow(() -> new RuntimeException("Nivel de soporte no encontrado"));
-
+                .orElseThrow(() -> new RuntimeException("Error: El ID de nivel de soporte no existe en los catálogos."));
         entity.setSupportLevel(supportLevel);
+
+        // 3. SEGURIDAD & AUDITORÍA: Capturamos quién del grupo está creando el plan
+        // Esto saca el 'login' del Token JWT de quien está usando Postman/Swagger
+        String username = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+
+        entity.setUsuarioRegistro(username); // Quedará grabado como 'piero' o 'luis'
+        entity.setStatus(1); // Activo por defecto
 
         var savedEntity = subscriptionPlanRepository.save(entity);
         return subscriptionPlanMapper.toResponseDto(savedEntity);
@@ -58,19 +67,28 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
     @Override
     @Transactional
     public SubscriptionPlanResponseDto updatePlan(Integer id, SubscriptionPlanRequestDto requestDto) {
+        log.info("STAFF OPERATION: Actualizando reglas del plan ID: {}", id);
+
         return subscriptionPlanRepository.findById(id).map(existingPlan -> {
+            // Actualización de campos básicos
             existingPlan.setName(requestDto.getName());
             existingPlan.setMonthlyPrice(requestDto.getMonthlyPrice());
             existingPlan.setDeviceLimit(requestDto.getDeviceLimit());
             existingPlan.setBillingCycle(requestDto.getBillingCycle());
 
-            // Actualizamos el catálogo si ha cambiado
+            // Actualización de relación con catálogo
             var supportLevel = dataCatalogoRepository.findById(requestDto.getSupportLevelId())
                     .orElseThrow(() -> new RuntimeException("Nivel de soporte no encontrado"));
             existingPlan.setSupportLevel(supportLevel);
 
-            return subscriptionPlanMapper.toResponseDto(subscriptionPlanRepository.save(existingPlan));
-        }).orElseThrow(() -> new RuntimeException("Plan no encontrado con ID: " + id));
+            // AUDITORÍA: Quién hizo la última modificación
+            String username = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication().getName();
+            existingPlan.setUsuarioActualizacion(username);
+
+            var updated = subscriptionPlanRepository.save(existingPlan);
+            return subscriptionPlanMapper.toResponseDto(updated);
+        }).orElseThrow(() -> new RuntimeException("El plan que intentas actualizar no existe (ID: " + id + ")"));
     }
 
     @Override
