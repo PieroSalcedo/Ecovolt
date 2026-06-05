@@ -10,13 +10,13 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "subscription_plans")
+@Table(name = "subscription_plan")
 public class SubscriptionPlan extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_plan")
-    private Integer id;
+    private Integer idPlan;
 
     @Column(name = "name", nullable = false, length = 50)
     private String name;
@@ -42,8 +42,8 @@ public class SubscriptionPlan extends BaseEntity {
      */
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "support_level_id")
-    private DataCatalog supportLevel;
+    @JoinColumn(name = "id_support_level")
+    private DataCatalog idSupportLevel;
 
     /*
      * REGLA DE NEGOCIO: Modelo de recurrencia.
