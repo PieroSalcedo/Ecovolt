@@ -12,13 +12,13 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "users")
+@Table(name = "user")
 public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_user")
-    private Long id;
+    private Long idUser;
 
     /*
      * REGLA DE NEGOCIO: Identificador único de autenticación.
@@ -54,7 +54,7 @@ public class User extends BaseEntity {
     /*
      * REGLA DE NEGOCIO: Cuota de Servicio.
      * Todo usuario debe estar vinculado a un plan para determinar sus límites (SaaS).
-     */
+    */
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_plan", nullable = false)

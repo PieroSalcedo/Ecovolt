@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "users_has_roles") // Nombre de tu tabla en Postgres
+@Table(name = "user_has_rol") // Nombre de tu tabla en Postgres
 public class UsuarioHasRol {
 
     @EmbeddedId

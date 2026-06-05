@@ -35,6 +35,6 @@ public class DataCatalog {
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_catalog", nullable = false)
-    private Catalog idCatalog;
+    private Catalog catalog;
 
 }

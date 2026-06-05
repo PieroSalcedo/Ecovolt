@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "roles")
+@Table(name = "role")
 public class Role {
 
     @Id
@@ -22,7 +22,7 @@ public class Role {
      * Es la base para que Spring Security permita o deniegue el acceso a los endpoints.
      */
     @Column(name = "name", nullable = false, unique = true, length = 50)
-    private String nombre;
+    private String name;
 
     /*
      * REGLA DE NEGOCIO: Control de Vigencia.
@@ -30,5 +30,5 @@ public class Role {
      * Permite deshabilitar un rol completo sin borrarlo de la base de datos (Integridad Referencial).
      */
     @Column(name = "status")
-    private Integer estado = 1;
+    private Integer status = 1;
 }

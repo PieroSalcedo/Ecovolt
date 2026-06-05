@@ -9,13 +9,13 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "devices")
+@Table(name = "device")
 public class Device extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_device")
-    private Long id;
+    private Long idDevice;
 
     /*
      * REGLA DE NEGOCIO: Identificador de Hardware Único (MAC Address / UUID).
@@ -29,7 +29,7 @@ public class Device extends BaseEntity {
      * REGLA DE NEGOCIO: Identificador amigable.
      * Nombre que el usuario asigna (Ej: "Refrigeradora LG") para identificarlo en el dashboard.
      */
-    @Column(name = "device_name", length = 100)
+    @Column(name = "name", length = 100)
     private String name;
 
     /*
@@ -39,7 +39,7 @@ public class Device extends BaseEntity {
      */
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
+    @JoinColumn(name = "id_category")
     private DataCatalog category;
 
     /*

@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "options")
+@Table(name = "option")
 public class Option {
 
     @Id
@@ -21,7 +21,7 @@ public class Option {
      * Es el nombre que aparecerá en el menú del sistema (Ej: 'Mis Dispositivos', 'Reporte de Consumo').
      */
     @Column(name = "name", length = 100)
-    private String nombre;
+    private String name;
 
     /*
      * REGLA DE NEGOCIO: Enrutamiento Dinámico.
@@ -29,7 +29,7 @@ public class Option {
      * También sirve como 'Authority' para proteger rutas en el backend.
      */
     @Column(name = "route", length = 255)
-    private String ruta;
+    private String route;
 
     /*
      * REGLA DE NEGOCIO: Categorización de UI.
@@ -37,7 +37,7 @@ public class Option {
      * Permite al Frontend saber dónde renderizar este permiso.
      */
     @Column(name = "type")
-    private Integer tipo;
+    private Integer type;
 
     /*
      * REGLA DE NEGOCIO: Disponibilidad de funcionalidad.
@@ -45,5 +45,5 @@ public class Option {
      * sin borrar los permisos asignados a los roles.
      */
     @Column(name = "status")
-    private Integer estado = 1;
+    private Integer status = 1;
 }

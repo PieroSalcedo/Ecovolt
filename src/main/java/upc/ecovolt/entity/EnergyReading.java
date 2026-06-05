@@ -13,13 +13,13 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "energy_readings")
+@Table(name = "energy_reading")
 public class EnergyReading {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_reading")
-    private Long id;
+    private Long idReading;
 
     /*
      * REGLA DE NEGOCIO: Variable Crítica de Facturación.
@@ -43,8 +43,8 @@ public class EnergyReading {
      * Es la "línea de tiempo" para las gráficas del Dashboard.
      */
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    @Column(name = "fecha_registro", updatable = false)
-    private LocalDateTime fechaRegistro;
+    @Column(name = "reading_at", updatable = false)
+    private LocalDateTime readingAt;
 
     /*
      * REGLA DE NEGOCIO: Estado de Integridad.
@@ -65,6 +65,6 @@ public class EnergyReading {
 
     @PrePersist
     protected void onCreate() {
-        this.fechaRegistro = LocalDateTime.now();
+        this.readingAt = LocalDateTime.now();
     }
 }

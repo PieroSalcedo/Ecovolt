@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "roles_has_options")
+@Table(name = "rol_has_option")
 public class RoleHasOption {
 
     /*

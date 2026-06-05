@@ -10,13 +10,13 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "rooms")
+@Table(name = "room")
 public class Room extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_room")
-    private Long id;
+    private Long idRoom;
 
     /*
      * REGLA DE NEGOCIO: Etiqueta descriptiva.
@@ -48,7 +48,7 @@ public class Room extends BaseEntity {
      */
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_type_id")
+    @JoinColumn(name = "id_room_type")
     private DataCatalog roomType;
 
     /*

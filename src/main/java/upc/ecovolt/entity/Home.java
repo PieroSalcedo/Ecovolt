@@ -10,13 +10,13 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "homes")
+@Table(name = "home")
 public class Home extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_home")
-    private Long id;
+    private Long idHome;
 
     /*
      * REGLA DE NEGOCIO: Ubicación física para geolocalización.
@@ -59,7 +59,7 @@ public class Home extends BaseEntity {
      */
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_tipo_vivienda")
+    @JoinColumn(name = "id_property_type")
     private DataCatalog propertyType;
 
     /*

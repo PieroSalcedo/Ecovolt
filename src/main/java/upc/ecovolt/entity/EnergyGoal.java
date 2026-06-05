@@ -10,13 +10,13 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "energy_goals")
+@Table(name = "energy_goal")
 public class EnergyGoal extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_goal")
-    private Integer id;
+    private Integer idGoal;
 
     /*
      * REGLA DE NEGOCIO: Presupuesto Energético Mensual.
