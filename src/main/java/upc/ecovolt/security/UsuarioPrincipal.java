@@ -26,12 +26,12 @@ public class UsuarioPrincipal implements UserDetails {
 
     public static UsuarioPrincipal build(User user, List<Role> roles, List<Option> opciones) {
         List<GrantedAuthority> authorities = roles.stream()
-                .map(rol -> new SimpleGrantedAuthority(rol.getNombre().startsWith("ROLE_")
-                        ? rol.getNombre() : "ROLE_" + rol.getNombre()))
+                .map(rol -> new SimpleGrantedAuthority(rol.getName().startsWith("ROLE_")
+                        ? rol.getName() : "ROLE_" + rol.getName()))
                 .collect(Collectors.toList());
 
         return new UsuarioPrincipal(
-                user.getId(),
+                user.getIdUser(),
                 user.getLogin(),
                 user.getPassword(),
                 user.getFullName(), // Usamos el método de la entidad
