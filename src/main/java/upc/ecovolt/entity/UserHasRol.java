@@ -11,7 +11,7 @@ import lombok.Setter;
 public class UserHasRol {
 
     @EmbeddedId
-    private UserHasRolPK usuarioHasRolPk;
+    private UserHasRolPK userHasRolPk;
 
     @ManyToOne
     @JoinColumn(name = "id_user", nullable = false, insertable = false, updatable = false)

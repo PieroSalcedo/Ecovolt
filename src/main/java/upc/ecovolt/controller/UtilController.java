@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.ecovolt.mapping.dto.datacatalogodto.DataCatalogoResponseDto;
-import upc.ecovolt.service.DataCatalogoService;
+import upc.ecovolt.service.DataCatalogService;
 import upc.ecovolt.util.AppSettings;
 
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.List;
 @CrossOrigin(origins = AppSettings.URL_CROSS_ORIGIN)
 public class UtilController {
 
-    private final DataCatalogoService dataCatalogoService;
+    private final DataCatalogService dataCatalogoService;
 
     @Operation(summary = "Lista los tipos de habitaciones disponibles")
     @GetMapping("/room-types")

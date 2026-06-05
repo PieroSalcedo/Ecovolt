@@ -9,7 +9,7 @@ import upc.ecovolt.entity.Home;
 import upc.ecovolt.mapping.dto.homedto.HomeMapper;
 import upc.ecovolt.mapping.dto.homedto.HomeRequestDto;
 import upc.ecovolt.mapping.dto.homedto.HomeResponseDto;
-import upc.ecovolt.repository.DataCatalogoRepository;
+import upc.ecovolt.repository.DataCatalogRepository;
 import upc.ecovolt.repository.HomeRepository;
 import upc.ecovolt.repository.UserRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
@@ -26,7 +26,7 @@ public class HomeServiceImpl implements HomeService {
 
     private final HomeRepository homeRepository;
     private final UserRepository userRepository;
-    private final DataCatalogoRepository dataCatalogoRepository;
+    private final DataCatalogRepository dataCatalogoRepository;
     private final HomeMapper homeMapper;
 
     /**

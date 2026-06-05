@@ -10,7 +10,7 @@ import upc.ecovolt.entity.Room;
 import upc.ecovolt.mapping.dto.devicedto.DeviceMapper;
 import upc.ecovolt.mapping.dto.devicedto.DeviceRequestDto;
 import upc.ecovolt.mapping.dto.devicedto.DeviceResponseDto;
-import upc.ecovolt.repository.DataCatalogoRepository;
+import upc.ecovolt.repository.DataCatalogRepository;
 import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.RoomRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
@@ -26,7 +26,7 @@ public class DeviceServiceImpl implements DeviceService {
 
     private final DeviceRepository deviceRepository;
     private final RoomRepository roomRepository;
-    private final DataCatalogoRepository dataCatalogoRepository;
+    private final DataCatalogRepository dataCatalogoRepository;
     private final DeviceMapper deviceMapper;
 
     /**

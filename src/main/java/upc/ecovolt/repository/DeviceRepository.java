@@ -28,14 +28,14 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
      * REGLA DE NEGOCIO: Inventario por Habitación.
      * Lista los equipos instalados en un ambiente específico.
      */
-    @Query("select d from Device d where d.room.id = ?1 and d.status = 1")
+    @Query("select d from Device d where d.room.idRoom = ?1 and d.status = 1")
     List<Device> findByRoomId(Long idRoom);
 
     /*
      * REGLA DE NEGOCIO: Inventario por Propiedad.
      * Lista todos los dispositivos de una casa (Device -> Room -> Home).
      */
-    @Query("select d from Device d where d.room.home.id = ?1 and d.status = 1")
+    @Query("select d from Device d where d.room.home.idHome = ?1 and d.status = 1")
     List<Device> findByHomeId(Long idHome);
 
     /*
@@ -49,6 +49,6 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
      * REGLA DE NEGOCIO: Gestión de Mantenimiento.
      * Cuenta cuántos dispositivos tiene un usuario en un estado específico.
      */
-    @Query("select count(d) from Device d where d.room.home.user.id = ?1 and d.status = ?2")
+    @Query("select count(d) from Device d where d.room.home.user.idUser = ?1 and d.status = ?2")
     long countByUserIdAndStatus(Long idUser, Integer status);
 }

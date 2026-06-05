@@ -8,7 +8,7 @@ import upc.ecovolt.entity.SubscriptionPlan;
 import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanMapper;
 import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanRequestDto;
 import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanResponseDto;
-import upc.ecovolt.repository.DataCatalogoRepository; // Necesario para resolver el catálogo
+import upc.ecovolt.repository.DataCatalogRepository; // Necesario para resolver el catálogo
 import upc.ecovolt.repository.SubscriptionPlanRepository;
 import upc.ecovolt.service.SubscriptionPlanService;
 
@@ -22,7 +22,7 @@ import java.util.Optional;
 public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final DataCatalogoRepository dataCatalogoRepository;
+    private final DataCatalogRepository dataCatalogoRepository;
     private final SubscriptionPlanMapper subscriptionPlanMapper;
 
     @Override

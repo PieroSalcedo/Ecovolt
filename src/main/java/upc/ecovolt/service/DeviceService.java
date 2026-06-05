@@ -1,47 +1,31 @@
 package upc.ecovolt.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.mapping.dto.devicedto.DeviceRequestDto;
-import upc.ecovolt.mapping.dto.devicedto.DeviceResponseDto;
+import upc.ecovolt.mapping.dto.DeviceDto;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface DeviceService {
 
-    // --- ACCESO ADMINISTRATIVO / SOPORTE ---
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
-    List<DeviceResponseDto> findAllDevices();
+    List<DeviceDto> findAllDevices();
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
-    List<DeviceResponseDto> findByManufacturer(String manufacturer);
+    List<DeviceDto> findByManufacturer(String manufacturer);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     long countByUserIdAndStatus(Long idUser, Integer status);
 
-    // --- ACCESO POR PROPIEDAD (OWNERSHIP) ---
+    Optional<DeviceDto> findDeviceById(Long id);
 
-    @PreAuthorize("isAuthenticated()")
-    Optional<DeviceResponseDto> findDeviceById(Long id);
+    DeviceDto saveDevice(DeviceDto requestDto);
 
-    @PreAuthorize("isAuthenticated()")
-    DeviceResponseDto saveDevice(DeviceRequestDto requestDto);
+    DeviceDto updateDevice(Long id, DeviceDto requestDto);
 
-    @PreAuthorize("isAuthenticated()")
-    DeviceResponseDto updateDevice(Long id, DeviceRequestDto requestDto);
-
-    @PreAuthorize("isAuthenticated()")
     void delete(Long id);
 
-    @PreAuthorize("isAuthenticated()")
-    Optional<DeviceResponseDto> findBySerialNumber(String serialNumber);
+    Optional<DeviceDto> findBySerialNumber(String serialNumber);
 
-    @PreAuthorize("isAuthenticated()")
-    List<DeviceResponseDto> findByCategoryName(String categoryDescription);
+    List<DeviceDto> findByCategoryName(String categoryDescription);
 
-    @PreAuthorize("isAuthenticated()")
-    List<DeviceResponseDto> findByRoomId(Long idRoom);
+    List<DeviceDto> findByRoomId(Long idRoom);
 
-    @PreAuthorize("isAuthenticated()")
-    List<DeviceResponseDto> findByHomeId(Long idHome);
+    List<DeviceDto> findByHomeId(Long idHome);
 }

@@ -16,7 +16,7 @@ public interface EnergyReadingRepository extends JpaRepository<EnergyReading, Lo
      * Suma el wattage total de un dispositivo en un rango de fechas.
      * Es la base para calcular cuánto debe pagar el usuario.
      */
-    @Query("select sum(er.wattage) from EnergyReading er where er.device.id = ?1 and er.fechaRegistro between ?2 and ?3")
+    @Query("select sum(er.wattage) from EnergyReading er where er.device.idDevice = ?1 and er.readingAt between ?2 and ?3")
     BigDecimal sumWattageByDeviceAndPeriod(Long idDevice, LocalDateTime start, LocalDateTime end);
 
     /*
@@ -24,7 +24,7 @@ public interface EnergyReadingRepository extends JpaRepository<EnergyReading, Lo
      * Obtiene el voltaje promedio de un dispositivo.
      * Ayuda a identificar problemas en la red eléctrica del hogar.
      */
-    @Query("select avg(er.voltage) from EnergyReading er where er.device.id = ?1")
+    @Query("select avg(er.voltage) from EnergyReading er where er.device.idDevice = ?1")
     Double getAverageVoltageByDevice(Long idDevice);
 
     /*
@@ -32,21 +32,21 @@ public interface EnergyReadingRepository extends JpaRepository<EnergyReading, Lo
      * Suma todo el consumo de una casa completa navegando: Reading -> Device -> Room -> Home.
      * Es lo que se muestra en el gráfico principal del Dashboard.
      */
-    @Query("select sum(er.wattage) from EnergyReading er where er.device.room.home.id = ?1 and er.fechaRegistro between ?2 and ?3")
+    @Query("select sum(er.wattage) from EnergyReading er where er.device.room.home.idHome = ?1 and er.readingAt between ?2 and ?3")
     BigDecimal sumTotalConsumptionByHome(Long idHome, LocalDateTime start, LocalDateTime end);
 
     /*
      * REGLA DE NEGOCIO: Telemetría en Tiempo Real.
      * Obtiene las últimas lecturas registradas de un dispositivo.
      */
-    @Query("select er from EnergyReading er where er.device.id = ?1 order by er.fechaRegistro desc")
+    @Query("select er from EnergyReading er where er.device.idDevice = ?1 order by er.readingAt desc")
     List<EnergyReading> findLatestReadingsByDevice(Long idDevice);
 
     /*
      * REGLA DE NEGOCIO: Detección de Fugas / Consumo Fantasma.
      * Busca lecturas de wattage superiores a cero en horarios donde no debería haber consumo.
      */
-    @Query("select er from EnergyReading er where er.device.id = ?1 and er.wattage > ?2 and er.status = 1")
+    @Query("select er from EnergyReading er where er.device.idDevice = ?1 and er.wattage > ?2 and er.status = 1")
     List<EnergyReading> findAbnormalConsumption(Long idDevice, BigDecimal threshold);
 
     /*
@@ -54,8 +54,8 @@ public interface EnergyReadingRepository extends JpaRepository<EnergyReading, Lo
      * Suma el consumo de todos los dispositivos de una categoría (Ej: 'Iluminación') en un hogar.
      */
     @Query("select sum(er.wattage) from EnergyReading er " +
-            "where er.device.room.home.id = ?1 " +
+            "where er.device.room.home.idHome = ?1 " +
             "and er.device.category.description = ?2 " +
-            "and er.fechaRegistro between ?3 and ?4")
+            "and er.readingAt between ?3 and ?4")
     BigDecimal sumConsumptionByCategory(Long idHome, String categoryDescription, LocalDateTime start, LocalDateTime end);
 }

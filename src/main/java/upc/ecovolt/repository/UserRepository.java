@@ -27,7 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT o FROM Option o " +
             "JOIN RoleHasOption ro ON o.idOption = ro.id.idOption " +
-            "JOIN UserHasRol ur ON ro.id.idRol = ur.usuarioHasRolPk.idRol " +
+            "JOIN UserHasRol ur ON ro.id.idRole = ur.usuarioHasRolPk.idRol " +
             "WHERE ur.usuarioHasRolPk.idUser = ?1")
     List<Option> traerEnlacesDeUsuario(Long idUser);
 
@@ -35,7 +35,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * REGLA DE SEGURIDAD: Autorización.
      * Obtiene los roles del usuario cruzando con la tabla intermedia.
      */
-    @Query("SELECT r FROM Role r JOIN UserHasRol ur ON r.idRol = ur.usuarioHasRolPk.idRol WHERE ur.usuarioHasRolPk.idUser = ?1")
+    @Query("SELECT r FROM Role r JOIN UserHasRol ur ON r.idRole = ur.us WHERE ur.usuarioHasRolPk.idUser = ?1")
     List<Role> traerRolesDeUsuario(Long idUser);
 
     /*
@@ -43,7 +43,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Obtiene el límite de dispositivos del plan asignado al usuario.
      * Optimiza el rendimiento al devolver solo el valor numérico (Integer).
      */
-    @Query("select u.subscriptionPlan.deviceLimit from User u where u.id = ?1")
+    @Query("select u.subscriptionPlan.deviceLimit from User u where u.idUser = ?1")
     Integer getDeviceLimitByUserId(Long idUser);
 
     /*
@@ -51,7 +51,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Cuenta usuarios únicos en una ciudad específica uniendo User con Home.
      */
     @Query("select count(distinct u) from User u, Home h " +
-            "where h.user.id = u.id and h.city = ?1 and u.status = 1")
+            "where h.user.idUser = u.idUser and h.city = ?1 and u.status = 1")
     long countUsersByCity(String city);
 
     /*

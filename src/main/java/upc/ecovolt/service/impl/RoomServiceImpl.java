@@ -10,7 +10,7 @@ import upc.ecovolt.entity.Home;
 import upc.ecovolt.mapping.dto.roomdto.RoomMapper;
 import upc.ecovolt.mapping.dto.roomdto.RoomRequestDto;
 import upc.ecovolt.mapping.dto.roomdto.RoomResponseDto;
-import upc.ecovolt.repository.DataCatalogoRepository;
+import upc.ecovolt.repository.DataCatalogRepository;
 import upc.ecovolt.repository.HomeRepository;
 import upc.ecovolt.repository.RoomRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
@@ -27,7 +27,7 @@ public class RoomServiceImpl implements RoomService {
 
     private final RoomRepository roomRepository;
     private final HomeRepository homeRepository;
-    private final DataCatalogoRepository dataCatalogoRepository;
+    private final DataCatalogRepository dataCatalogoRepository;
     private final RoomMapper roomMapper;
 
     /**

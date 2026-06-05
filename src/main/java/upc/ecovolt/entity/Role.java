@@ -13,8 +13,8 @@ public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_rol")
-    private Integer idRol;
+    @Column(name = "id_role")
+    private Integer idRole;
 
     /*
      * REGLA DE NEGOCIO: Identificador de Autoridad.

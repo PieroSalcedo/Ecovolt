@@ -9,17 +9,17 @@ import upc.ecovolt.mapping.dto.datacatalogodto.DataCatalogoMapper;
 import upc.ecovolt.mapping.dto.datacatalogodto.DataCatalogoRequestDto;
 import upc.ecovolt.mapping.dto.datacatalogodto.DataCatalogoResponseDto;
 import upc.ecovolt.repository.CatalogoRepository; // IMPORTANTE: Inyectar el repo maestro
-import upc.ecovolt.repository.DataCatalogoRepository;
-import upc.ecovolt.service.DataCatalogoService;
+import upc.ecovolt.repository.DataCatalogRepository;
+import upc.ecovolt.service.DataCatalogService;
 
 import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DataCatalogoServiceImpl implements DataCatalogoService {
+public class DataCatalogoServiceImpl implements DataCatalogService {
 
-    private final DataCatalogoRepository dataCatalogoRepository;
+    private final DataCatalogRepository dataCatalogoRepository;
     private final CatalogoRepository catalogoRepository; // Para validar que la "caja" existe
     private final DataCatalogoMapper dataCatalogoMapper;
 

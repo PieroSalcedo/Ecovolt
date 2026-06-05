@@ -1,8 +1,6 @@
 package upc.ecovolt.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.mapping.dto.homedto.HomeRequestDto;
-import upc.ecovolt.mapping.dto.homedto.HomeResponseDto;
+import upc.ecovolt.mapping.dto.HomeDto;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -10,41 +8,25 @@ import java.util.Optional;
 
 public interface HomeService {
 
-    // --- ACCESO ADMINISTRATIVO (STAFF) ---
-    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR', 'ANALYST')")
-    List<HomeResponseDto> findAllHomes();
+    List<HomeDto> findAllHomes();
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST', 'MANAGER')")
-    List<HomeResponseDto> findByPropertyTypeName(String propertyTypeDescription);
+    List<HomeDto> findByPropertyTypeName(String propertyTypeDescription);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
-    List<HomeResponseDto> findHomesByHighTariff(BigDecimal tariffThreshold);
+    List<HomeDto> findHomesByHighTariff(BigDecimal tariffThreshold);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
-    List<HomeResponseDto> findByCity(String city);
+    List<HomeDto> findByCity(String city);
 
-    // --- ACCESO DE CLIENTE (OWNERSHIP) ---
+    List<HomeDto> findActiveHomesByUser(Long idUser);
 
-    // Un cliente solo puede ver sus propias casas
-    @PreAuthorize("hasRole('ADMIN') or #idUser == principal.idUser")
-    List<HomeResponseDto> findActiveHomesByUser(Long idUser);
+    HomeDto saveHome(HomeDto requestDto);
 
-    // El ID en el DTO debe ser igual al ID del token (Nadie registra casas para otros)
-    @PreAuthorize("hasRole('ADMIN') or #requestDto.userId == principal.idUser")
-    HomeResponseDto saveHome(HomeRequestDto requestDto);
+    Optional<HomeDto> findHomeById(Long idHome);
 
-    @PreAuthorize("isAuthenticated()") // La validación de dueño se hace dentro del Impl por seguridad
-    Optional<HomeResponseDto> findHomeById(Long id);
+    HomeDto updateHome(Long idHome, HomeDto requestDto);
 
-    @PreAuthorize("isAuthenticated()")
-    HomeResponseDto updateHome(Long id, HomeRequestDto requestDto);
-
-    @PreAuthorize("hasRole('ADMIN') or isAuthenticated()")
     void delete(Long id);
 
-    @PreAuthorize("isAuthenticated()")
     long countTotalDevicesByHome(Long idHome);
 
-    @PreAuthorize("isAuthenticated()")
-    List<HomeResponseDto> findByAliasAndUserId(String alias, Long idUser);
+    List<HomeDto> findByAliasAndUserId(String alias, Long idUser);
 }

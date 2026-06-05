@@ -22,7 +22,7 @@ public class RoleHasOption {
      * Esta relación permite navegar desde un rol hacia las opciones de menú permitidas.
      */
     @ManyToOne
-    @JoinColumn(name = "id_rol", nullable = false, insertable = false, updatable = false)
+    @JoinColumn(name = "id_role", nullable = false, insertable = false, updatable = false)
     private Role role;
 
     /*
