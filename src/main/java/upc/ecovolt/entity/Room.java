@@ -49,7 +49,7 @@ public class Room extends BaseEntity {
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_type_id")
-    private DataCatalogo roomType;
+    private DataCatalog roomType;
 
     /*
      * REGLA DE NEGOCIO: Integridad Jerárquica.

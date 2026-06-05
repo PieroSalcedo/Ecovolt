@@ -43,7 +43,7 @@ public class SubscriptionPlan extends BaseEntity {
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "support_level_id")
-    private DataCatalogo supportLevel;
+    private DataCatalog supportLevel;
 
     /*
      * REGLA DE NEGOCIO: Modelo de recurrencia.

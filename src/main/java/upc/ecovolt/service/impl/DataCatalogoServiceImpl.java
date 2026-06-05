@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import upc.ecovolt.entity.DataCatalogo;
+import upc.ecovolt.entity.DataCatalog;
 import upc.ecovolt.mapping.dto.datacatalogodto.DataCatalogoMapper;
 import upc.ecovolt.mapping.dto.datacatalogodto.DataCatalogoRequestDto;
 import upc.ecovolt.mapping.dto.datacatalogodto.DataCatalogoResponseDto;
@@ -41,7 +41,7 @@ public class DataCatalogoServiceImpl implements DataCatalogoService {
                 .orElseThrow(() -> new RuntimeException("Error: El catálogo maestro no existe."));
 
         // 2. Mapear DTO a Entidad
-        DataCatalogo entity = dataCatalogoMapper.toEntity(requestDto);
+        DataCatalog entity = dataCatalogoMapper.toEntity(requestDto);
 
         // 3. REGLA TÉCNICA: Asignar el objeto maestro completo
         // MapStruct no puede adivinar el objeto maestro solo con el ID, lo hacemos manual aquí.

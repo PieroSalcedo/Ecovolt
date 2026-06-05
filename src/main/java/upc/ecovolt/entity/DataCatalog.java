@@ -9,8 +9,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "data_catalogs")
-public class DataCatalogo {
+@Table(name = "data_catalog")
+public class DataCatalog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,6 +35,6 @@ public class DataCatalogo {
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_catalog", nullable = false)
-    private Catalogo catalogo;
+    private Catalog idCatalog;
 
 }

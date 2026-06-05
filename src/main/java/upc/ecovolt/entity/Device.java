@@ -40,7 +40,7 @@ public class Device extends BaseEntity {
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
-    private DataCatalogo category;
+    private DataCatalog category;
 
     /*
      * REGLA DE NEGOCIO: Trazabilidad de Fabricante.

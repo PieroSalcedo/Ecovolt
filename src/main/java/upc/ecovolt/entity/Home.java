@@ -60,7 +60,7 @@ public class Home extends BaseEntity {
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_tipo_vivienda")
-    private DataCatalogo propertyType;
+    private DataCatalog propertyType;
 
     /*
      * REGLA DE NEGOCIO: Propiedad y Seguridad de Datos.
