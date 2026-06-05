@@ -23,24 +23,22 @@ public abstract class BaseEntity {
     @Column(name = "status", nullable = false)
     private Integer status = 1;
 
-    // Auditoría de Fechas (Formato igual al del profe para el JSON)
     @CreatedDate
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    @Column(name = "fecha_registro", updatable = false)
-    private LocalDateTime fechaRegistro;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @CreatedBy
+    @Column(name = "created_by", length = 50, updatable = false)
+    private String createdBy ;
 
     @LastModifiedDate
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    @Column(name = "fecha_actualizacion")
-    private LocalDateTime fechaActualizacion;
-
-    // Auditoría de Usuarios (Nombres de columnas del script de Postgres)
-    @CreatedBy
-    @Column(name = "usuario_registro", length = 50, updatable = false)
-    private String usuarioRegistro = "SYSTEM";
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @LastModifiedBy
-    @Column(name = "usuario_actualizacion", length = 50)
-    private String usuarioActualizacion;
+    @Column(name = "updated_by", length = 50)
+    private String updatedBy;
 
 }
