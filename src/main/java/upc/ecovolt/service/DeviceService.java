@@ -7,25 +7,25 @@ import java.util.Optional;
 
 public interface DeviceService {
 
-    List<DeviceDto> findAllDevices();
+    List<DeviceDto.Response> findAllDevices();
 
-    List<DeviceDto> findByManufacturer(String manufacturer);
+    List<DeviceDto.Response> findByManufacturer(String manufacturer);
 
     long countByUserIdAndStatus(Long idUser, Integer status);
 
-    Optional<DeviceDto> findDeviceById(Long id);
+    Optional<DeviceDto.Response> findDeviceById(Long idDevice);
 
-    DeviceDto saveDevice(DeviceDto requestDto);
+    DeviceDto.Response saveDevice(DeviceDto.Request requestDto);
 
-    DeviceDto updateDevice(Long id, DeviceDto requestDto);
+    DeviceDto.Response updateDevice(Long idDevice, DeviceDto.Request requestDto);
 
-    void delete(Long id);
+    void delete(Long idDevice);
 
-    Optional<DeviceDto> findBySerialNumber(String serialNumber);
+    Optional<DeviceDto.Response> findBySerialNumber(String serialNumber);
 
-    List<DeviceDto> findByCategoryName(String categoryDescription);
+    List<DeviceDto.Response> findByCategoryName(String categoryDescription);
 
-    List<DeviceDto> findByRoomId(Long idRoom);
+    List<DeviceDto.Response> findByRoomId(Long idRoom);
 
-    List<DeviceDto> findByHomeId(Long idHome);
+    List<DeviceDto.Response> findByHomeId(Long idHome);
 }

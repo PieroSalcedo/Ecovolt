@@ -5,17 +5,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.Option;
-import upc.ecovolt.mapping.dto.optiondto.OptionMapper;
-import upc.ecovolt.mapping.dto.optiondto.OptionRequestDto;
-import upc.ecovolt.mapping.dto.optiondto.OptionResponseDto;
+import upc.ecovolt.mapping.dto.OptionDto;
+import upc.ecovolt.mapping.dto.OptionMapper;
 import upc.ecovolt.repository.OptionRepository;
 import upc.ecovolt.service.OptionService;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class OptionServiceImpl implements OptionService {
 
     private final OptionRepository optionRepository;
@@ -23,45 +22,54 @@ public class OptionServiceImpl implements OptionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<OptionResponseDto> findAll() {
+    public List<OptionDto.Response> findAll() {
         return optionMapper.toResponseDtoList(optionRepository.findAll());
     }
 
     @Override
     @Transactional
-    public OptionResponseDto save(OptionRequestDto requestDto) {
-        // 1. REGLA DE NEGOCIO: Normalización de rutas
-        String ruta = requestDto.getRuta().trim();
-        if (!ruta.startsWith("/")) {
-            ruta = "/" + ruta;
+    public OptionDto.Response save(OptionDto.Request requestDto) {
+        // 1. REGLA DE NEGOCIO: Normalización de rutas de navegación
+        // Tu DTO usa 'url' pero tu entidad usa 'route'. El Mapper se encarga de esto.
+        // Aquí normalizamos el String para asegurar que siempre empiece con '/'
+        String route = requestDto.getUrl().trim();
+        if (!route.startsWith("/")) {
+            route = "/" + route;
         }
 
-        // 2. VALIDACIÓN: Evitar colisión de rutas en el Frontend
-        if (!optionRepository.findByRuta(ruta).isEmpty()) {
-            log.error("CONFIG ERROR: Ya existe una opción registrada con la ruta {}", ruta);
-            throw new RuntimeException("Error: La ruta de navegación ya está asignada a otra opción.");
+        // 2. VALIDACIÓN: Evitar colisión de rutas (deben ser únicas)
+        if (optionRepository.findByRoute(route).isPresent()) {
+            log.error("CONFIG ERROR: Ya existe una opción con la ruta {}", route);
+            throw new RuntimeException("La ruta de navegación '" + route + "' ya está asignada.");
         }
 
-        log.info("SISTEMA: Registrando nueva funcionalidad de interfaz: {}", requestDto.getNombre());
+        log.info("SISTEMA: Registrando nueva opción de menú: {}", requestDto.getName());
 
         Option entity = optionMapper.toEntity(requestDto);
-        entity.setRuta(ruta);
-        entity.setEstado(1);
+        entity.setRoute(route); // Aseguramos la ruta normalizada
+        entity.setStatus(1);    // Activa por defecto
 
         return optionMapper.toResponseDto(optionRepository.save(entity));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<OptionResponseDto> findByType(Integer tipo) {
-        // REGLA DE NEGOCIO: Filtrar entre Menús (1) y Acciones (2)
-        var options = optionRepository.findByType(tipo);
-        return optionMapper.toResponseDtoList(options);
+    public List<OptionDto.Response> findByType(Integer type) {
+        // Filtra por tipo (1: Menú Sidebar, 2: Botón Acción, etc.)
+        return optionMapper.toResponseDtoList(optionRepository.findByType(type));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<OptionResponseDto> findActiveOptions() {
+    public List<OptionDto.Response> findActiveOptions() {
         return optionMapper.toResponseDtoList(optionRepository.findActiveOptions());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OptionDto.Response> findOptionsByRoleId(Integer idRole) {
+        log.debug("Cargando permisos dinámicos para el Rol ID: {}", idRole);
+        var options = optionRepository.findOptionsByRoleId(idRole);
+        return optionMapper.toResponseDtoList(options);
     }
 }

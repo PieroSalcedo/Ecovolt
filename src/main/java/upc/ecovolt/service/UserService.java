@@ -1,46 +1,35 @@
 package upc.ecovolt.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.entity.Option;
-import upc.ecovolt.entity.Role;
-import upc.ecovolt.mapping.dto.userdto.UserRequestDto;
-import upc.ecovolt.mapping.dto.userdto.UserResponseDto;
+import upc.ecovolt.mapping.dto.UserDto;
+import upc.ecovolt.mapping.dto.OptionDto;
+import upc.ecovolt.mapping.dto.RoleDto;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface UserService {
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
-    List<UserResponseDto> findAllUsers();
+    List<UserDto.Response> findAllUsers();
 
-    // Regla Especial: El Admin entra, o el usuario cuyo ID coincida con el autenticado
-    @PreAuthorize("hasRole('ADMIN') or #id == principal.idUser")
-    Optional<UserResponseDto> findUserById(Long id);
+    Optional<UserDto.Response> findUserById(Long idUser);
 
-    @PreAuthorize("permitAll()") // Registro libre
-    UserResponseDto saveUser(UserRequestDto requestDto);
+    UserDto.Response saveUser(UserDto.Request requestDto);
 
-    @PreAuthorize("hasRole('ADMIN') or #id == principal.idUser")
-    UserResponseDto updateUser(Long id, UserRequestDto requestDto);
+    UserDto.Response updateUser(Long idUser, UserDto.Request requestDto);
 
-    @PreAuthorize("hasRole('ADMIN')")
-    void delete(Long id);
+    void delete(Long idUser);
 
-    // --- REGLAS DE NEGOCIO ---
+    Optional<UserDto.Response> findByLogin(String login);
 
-    @PreAuthorize("hasRole('ADMIN')")
-    Optional<UserResponseDto> findByLogin(String login);
+    /*
+     * REGLA DE SEGURIDAD DINÁMICA:
+     * Obtiene los menús (enlaces) permitidos para el usuario según sus roles.
+     */
+    List<OptionDto.Response> findNavOptionsByUserId(Long idUser);
 
-    @PreAuthorize("isAuthenticated()") // Cualquiera logueado puede ver su propio menú
-    List<Option> traerEnlacesDeUsuario(Long idUser);
+    List<RoleDto.Response> findRolesByUserId(Long idUser);
 
-    @PreAuthorize("hasRole('ADMIN')") // Ver roles es una tarea administrativa
-    List<Role> traerRolesDeUsuario(Long idUser);
-
-    @PreAuthorize("isAuthenticated()")
     Integer getDeviceLimitByUserId(Long idUser);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
     long countUsersByCity(String city);
 }

@@ -5,11 +5,17 @@ import java.util.List;
 
 public interface OptionService {
 
-    List<OptionDto> findAll();
+    List<OptionDto.Response> findAll();
 
-    OptionDto save(OptionDto requestDto);
+    OptionDto.Response save(OptionDto.Request requestDto);
 
-    List<OptionDto> findByType(Integer type);
+    List<OptionDto.Response> findByType(Integer type);
 
-    List<OptionDto> findActiveOptions();
+    List<OptionDto.Response> findActiveOptions();
+
+    /*
+     * REGLA DE NEGOCIO: Obtener menús por Rol.
+     * Esencial para la carga dinámica del Sidebar en el Frontend.
+     */
+    List<OptionDto.Response> findOptionsByRoleId(Integer idRole);
 }

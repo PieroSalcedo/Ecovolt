@@ -5,11 +5,18 @@ import java.util.List;
 
 public interface DataCatalogService {
 
-    List<DataCatalogDto> findAll();
+    List<DataCatalogDto.Response> findAll();
 
-    List<DataCatalogDto> findByCatalogDescription(String catalogDescription);
+    /*
+     * REGLA DE NEGOCIO: Cargar combos dinámicos por nombre de categoría maestra.
+     * Ejemplo: "TIPO_HABITACION", "ESTADO_DISPOSITIVO".
+     */
+    List<DataCatalogDto.Response> findByCatalogDescription(String catalogDescription);
 
-    List<DataCatalogDto> findByDescriptionAndCatalog(String description, String catalogDescription);
+    /*
+     * REGLA DE NEGOCIO: Buscar una opción específica dentro de un grupo.
+     */
+    List<DataCatalogDto.Response> findByDescriptionAndCatalog(String description, String catalogDescription);
 
-    DataCatalogDto save(DataCatalogDto requestDto);
+    DataCatalogDto.Response save(DataCatalogDto.Request requestDto);
 }

@@ -1,53 +1,29 @@
 package upc.ecovolt.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanRequestDto;
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanResponseDto;
-
+import upc.ecovolt.mapping.dto.SubscriptionPlanDto;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 public interface SubscriptionPlanService {
 
-    // --- ACCESO PÚBLICO / CUALQUIER ROL ---
+    List<SubscriptionPlanDto.Response> findAllPlans();
 
-    @PreAuthorize("permitAll()")
-    List<SubscriptionPlanResponseDto> findAllPlans();
+    Optional<SubscriptionPlanDto.Response> findPlanById(Integer idPlan);
 
-    @PreAuthorize("permitAll()")
-    Optional<SubscriptionPlanResponseDto> findPlanById(Integer id);
+    List<SubscriptionPlanDto.Response> findPlansByPriceRange(BigDecimal min, BigDecimal max);
 
-    @PreAuthorize("permitAll()")
-    List<SubscriptionPlanResponseDto> findPlansByPriceRange(BigDecimal min, BigDecimal max);
+    List<SubscriptionPlanDto.Response> findBySupportLevelName(String supportLevel);
 
-    /*
-     * ESTE ES EL MÉTODO QUE FALTABA Y CAUSABA EL ERROR ROJO
-     */
-    @PreAuthorize("permitAll()")
-    List<SubscriptionPlanResponseDto> findBySupportLevelName(String supportLevel);
+    SubscriptionPlanDto.Response savePlan(SubscriptionPlanDto.Request requestDto);
 
-    // --- ACCESO EXCLUSIVO STAFF (GESTIÓN) ---
+    SubscriptionPlanDto.Response updatePlan(Integer idPlan, SubscriptionPlanDto.Request requestDto);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    SubscriptionPlanResponseDto savePlan(SubscriptionPlanRequestDto requestDto);
+    void delete(Integer idPlan);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    SubscriptionPlanResponseDto updatePlan(Integer id, SubscriptionPlanRequestDto requestDto);
+    long countActiveUsersByPlan(Integer idPlan);
 
-    @PreAuthorize("hasRole('ADMIN')")
-    void delete(Integer id);
+    List<SubscriptionPlanDto.Response> findUpgradeOptions(Integer currentLimit);
 
-    // --- ACCESO ANALÍTICO ---
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
-    long countActiveUsersByPlan(Integer planId);
-
-    // --- LÓGICA DE APOYO AL CLIENTE ---
-
-    @PreAuthorize("isAuthenticated()")
-    List<SubscriptionPlanResponseDto> findUpgradeOptions(Integer currentLimit);
-
-    @PreAuthorize("isAuthenticated()")
-    Integer getDeviceLimitById(Integer planId);
+    Integer getDeviceLimitById(Integer idPlan);
 }

@@ -5,18 +5,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.Role;
-import upc.ecovolt.mapping.dto.roledto.RoleMapper;
-import upc.ecovolt.mapping.dto.roledto.RoleRequestDto;
-import upc.ecovolt.mapping.dto.roledto.RoleResponseDto;
+import upc.ecovolt.mapping.dto.RoleDto;
+import upc.ecovolt.mapping.dto.RoleMapper;
 import upc.ecovolt.repository.RoleRepository;
 import upc.ecovolt.service.RoleService;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepository;
@@ -24,50 +23,50 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoleResponseDto> findAll() {
+    public List<RoleDto.Response> findAll() {
         return roleMapper.toResponseDtoList(roleRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<RoleResponseDto> findByNombre(String nombre) {
-        return roleRepository.findByNombre(nombre).map(roleMapper::toResponseDto);
+    public Optional<RoleDto.Response> findByName(String name) {
+        return roleRepository.findByName(name.toUpperCase().trim())
+                .map(roleMapper::toResponseDto);
     }
 
     @Override
     @Transactional
-    public RoleResponseDto save(RoleRequestDto requestDto) {
-        // 1. REGLA DE SEGURIDAD: Normalizar el nombre (Mayúsculas y Prefijo ROLE_)
-        String roleName = requestDto.getNombre().toUpperCase().trim();
+    public RoleDto.Response save(RoleDto.Request requestDto) {
+        // 1. NORMALIZACIÓN: Asegurar formato ROLE_NOMBRE
+        String roleName = requestDto.getName().toUpperCase().trim();
         if (!roleName.startsWith("ROLE_")) {
             roleName = "ROLE_" + roleName;
         }
 
-        // 2. VALIDACIÓN: Evitar duplicidad de identidades de acceso
-        if (roleRepository.findByNombre(roleName).isPresent()) {
-            log.error("INTENTO FALLIDO: El rol {} ya existe en el sistema.", roleName);
-            throw new RuntimeException("Error: El perfil de seguridad ya está registrado.");
+        // 2. VALIDACIÓN: Evitar duplicados
+        if (roleRepository.existsByName(roleName)) {
+            log.warn("NEGOCIO: Intento de duplicar rol {}", roleName);
+            throw new RuntimeException("El rol ya existe en el sistema.");
         }
 
-        log.info("SISTEMA: Creando nuevo privilegio de acceso: {}", roleName);
+        log.info("SISTEMA: Creando nuevo rol de acceso: {}", roleName);
 
-        Role entity = new Role();
-        entity.setNombre(roleName);
-        entity.setEstado(1); // Activo por defecto
+        Role entity = roleMapper.toEntity(requestDto);
+        entity.setName(roleName);
+        entity.setStatus(1);
 
         return roleMapper.toResponseDto(roleRepository.save(entity));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public long countUsersByRoleId(Integer idRol) {
-        // REGLA DE NEGOCIO: Analítica de distribución de usuarios
-        return roleRepository.countUsersByRoleId(idRol);
+    public long countUsersByRoleId(Integer idRole) {
+        return roleRepository.countUsersByRoleId(idRole);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoleResponseDto> findActiveRoles() {
+    public List<RoleDto.Response> findActiveRoles() {
         return roleMapper.toResponseDtoList(roleRepository.findActiveRoles());
     }
 }

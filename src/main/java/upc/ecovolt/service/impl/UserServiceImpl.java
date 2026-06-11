@@ -5,12 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import upc.ecovolt.entity.Role;
 import upc.ecovolt.entity.User;
-import upc.ecovolt.entity.Option;
-import upc.ecovolt.mapping.dto.userdto.UserMapper;
-import upc.ecovolt.mapping.dto.userdto.UserRequestDto;
-import upc.ecovolt.mapping.dto.userdto.UserResponseDto;
+import upc.ecovolt.entity.Role;
+import upc.ecovolt.mapping.dto.*;
 import upc.ecovolt.repository.RoleRepository;
 import upc.ecovolt.repository.SubscriptionPlanRepository;
 import upc.ecovolt.repository.UserRepository;
@@ -20,104 +17,108 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final SubscriptionPlanRepository planRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder; // Inyectado desde SecurityConfig
+    private final OptionMapper optionMapper;
+    private final RoleMapper roleMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserResponseDto> findAllUsers() {
-        return userMapper.toDtoList(userRepository.findAll());
+    public List<UserDto.Response> findAllUsers() {
+        return userMapper.toResponseDtoList(userRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<UserResponseDto> findUserById(Long id) {
-        return userRepository.findById(id).map(userMapper::toDto);
+    public Optional<UserDto.Response> findUserById(Long idUser) {
+        return userRepository.findById(idUser).map(userMapper::toResponseDto);
     }
 
     @Override
     @Transactional
-    public UserResponseDto saveUser(UserRequestDto requestDto) {
-        log.info("REGISTRO: Nuevo prospecto de cliente con login: {}", requestDto.getLogin());
+    public UserDto.Response saveUser(UserDto.Request requestDto) {
+        log.info("REGISTRO: Creando cuenta para login: {}", requestDto.getName()); // Usando name como login según tu DTO
 
-        if (userRepository.findByLogin(requestDto.getLogin()).isPresent()) {
+        // 1. VALIDACIÓN: Disponibilidad de Login y Email
+        if (userRepository.existsByLogin(requestDto.getName())) {
             throw new RuntimeException("El nombre de usuario ya está en uso.");
         }
 
+        // 2. MAPEO Y ENCRIPTACIÓN
         User user = userMapper.toEntity(requestDto);
+        user.setLogin(requestDto.getName()); // Sincronización con el campo login de la entidad
         user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
 
-        // REGLA DE NEGOCIO: Todo registro web SIEMPRE es Customer con Plan Free (ID 1)
+        // 3. REGLA DE NEGOCIO SaaS: Registro por defecto (Plan Free + ROLE_CUSTOMER)
         var freePlan = planRepository.findById(1)
-                .orElseThrow(() -> new RuntimeException("Error interno: Plan base no configurado"));
+                .orElseThrow(() -> new RuntimeException("Error: Plan base (Free) no encontrado."));
         user.setSubscriptionPlan(freePlan);
 
-        Role customerRole = roleRepository.findByNombre("ROLE_CUSTOMER")
-                .orElseThrow(() -> new RuntimeException("Error interno: Rol base no configurado"));
+        Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseThrow(() -> new RuntimeException("Error: Rol base no configurado."));
         user.setRoles(Set.of(customerRole));
 
-        user.setUsuarioRegistro("SELF_SERVICE");
+        user.setStatus(1); // Activo por defecto
 
-        return userMapper.toDto(userRepository.save(user));
+        return userMapper.toResponseDto(userRepository.save(user));
     }
 
     @Override
     @Transactional
-    public UserResponseDto updateUser(Long id, UserRequestDto requestDto) {
-        return userRepository.findById(id).map(existingUser -> {
-            // Un usuario normal no puede cambiarse a sí mismo el plan por DTO (SaaS Protection)
-            // Solo si es ADMIN se permite cambiar el plan de suscripción
+    public UserDto.Response updateUser(Long idUser, UserDto.Request requestDto) {
+        return userRepository.findById(idUser).map(existing -> {
+            existing.setEmail(requestDto.getEmail());
+            // Si el DTO tuviera firstName/lastName, se actualizarían aquí
 
-            existingUser.setFirstName(requestDto.getFirstName());
-            existingUser.setLastName(requestDto.getLastName());
-            existingUser.setEmail(requestDto.getEmail());
-
-            // Auditoría
-            existingUser.setUsuarioActualizacion(requestDto.getLogin());
-
-            return userMapper.toDto(userRepository.save(existingUser));
+            return userMapper.toResponseDto(userRepository.save(existing));
         }).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
     @Override
     @Transactional
-    public void delete(Long id) {
-        if (!userRepository.existsById(id)) throw new RuntimeException("Usuario no existe");
-        userRepository.deleteById(id);
-    }
-
-    // --- IMPLEMENTACIÓN DE MÉTODOS DE NEGOCIO Y SEGURIDAD ---
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<UserResponseDto> findByLogin(String login) {
-        return userRepository.findByLogin(login).map(userMapper::toDto);
+    public void delete(Long idUser) {
+        // REGLA DE NEGOCIO: Borrado lógico para preservar la integridad de toda la cuenta
+        userRepository.findById(idUser).ifPresent(u -> {
+            u.setStatus(0);
+            userRepository.save(u);
+            log.warn("BORRADO LÓGICO: Usuario ID {} desactivado", idUser);
+        });
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Option> traerEnlacesDeUsuario(Long idUser) {
-        return userRepository.traerEnlacesDeUsuario(idUser);
+    public Optional<UserDto.Response> findByLogin(String login) {
+        return userRepository.findByLogin(login).map(userMapper::toResponseDto);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Role> traerRolesDeUsuario(Long idUser) {
-        return userRepository.traerRolesDeUsuario(idUser);
+    public List<OptionDto.Response> findNavOptionsByUserId(Long idUser) {
+        // Esta es la consulta clave para que el Frontend dibuje el menú
+        var options = userRepository.findNavOptionsByUserId(idUser);
+        return optionMapper.toResponseDtoList(options);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RoleDto.Response> findRolesByUserId(Long idUser) {
+        var roles = userRepository.findRolesByUserId(idUser);
+        return roleMapper.toResponseDtoList(roles);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Integer getDeviceLimitByUserId(Long idUser) {
-        return userRepository.getDeviceLimitByUserId(idUser);
+        return userRepository.getDeviceLimitByUserId(idUser)
+                .orElse(0);
     }
 
     @Override
