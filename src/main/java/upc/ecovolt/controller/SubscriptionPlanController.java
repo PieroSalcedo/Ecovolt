@@ -10,8 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.ecovolt.mapping.dto.ApiResponseDto; // Importante
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanRequestDto;
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanResponseDto;
+import upc.ecovolt.mapping.dto.SubscriptionPlanDto;
 import upc.ecovolt.service.SubscriptionPlanService;
 import upc.ecovolt.util.AppSettings;
 
@@ -32,10 +31,10 @@ public class SubscriptionPlanController {
     @Operation(summary = "Crear un nuevo plan", description = "RESTRICTED: Solo ADMIN o MANAGER. Define precios y límites de dispositivos.")
     @ApiResponse(responseCode = "201", description = "Plan creado exitosamente")
     @PostMapping
-    public ResponseEntity<ApiResponseDto<SubscriptionPlanResponseDto>> create(@Valid @RequestBody SubscriptionPlanRequestDto request) {
+    public ResponseEntity<ApiResponseDto<SubscriptionPlanDto.Response>> create(@Valid @RequestBody SubscriptionPlanDto.Request request) {
         var data = planService.savePlan(request);
 
-        return new ResponseEntity<>(ApiResponseDto.<SubscriptionPlanResponseDto>builder()
+        return new ResponseEntity<>(ApiResponseDto.<SubscriptionPlanDto.Response>builder()
                 .title("¡Nuevo Plan Creado!")
                 .message("El plan comercial '" + data.getName() + "' ha sido registrado exitosamente.")
                 .status("SUCCESS")
@@ -45,13 +44,13 @@ public class SubscriptionPlanController {
 
     @Operation(summary = "Actualizar un plan existente", description = "RESTRICTED: Solo ADMIN o MANAGER. Modifica reglas y costos.")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<SubscriptionPlanResponseDto>> update(
+    public ResponseEntity<ApiResponseDto<SubscriptionPlanDto.Response>> update(
             @Parameter(description = "ID del plan a modificar", example = "2") @PathVariable Integer id,
-            @Valid @RequestBody SubscriptionPlanRequestDto request) {
+            @Valid @RequestBody SubscriptionPlanDto.Request request) {
 
         var data = planService.updatePlan(id, request);
 
-        return ResponseEntity.ok(ApiResponseDto.<SubscriptionPlanResponseDto>builder()
+        return ResponseEntity.ok(ApiResponseDto.<SubscriptionPlanDto.Response>builder()
                 .title("Plan Actualizado")
                 .message("Las condiciones y límites del plan '" + data.getName() + "' se han modificado correctamente.")
                 .status("SUCCESS")
@@ -77,13 +76,13 @@ public class SubscriptionPlanController {
 
     @Operation(summary = "Obtener todos los planes activos", description = "ACCESO PÚBLICO")
     @GetMapping
-    public ResponseEntity<List<SubscriptionPlanResponseDto>> getAll() {
+    public ResponseEntity<List<SubscriptionPlanDto.Response>> getAll() {
         return ResponseEntity.ok(planService.findAllPlans());
     }
 
     @Operation(summary = "Obtener un plan por ID", description = "ACCESO PÚBLICO")
     @GetMapping("/{id}")
-    public ResponseEntity<SubscriptionPlanResponseDto> getById(@PathVariable Integer id) {
+    public ResponseEntity<SubscriptionPlanDto.Response> getById(@PathVariable Integer id) {
         return planService.findPlanById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -91,7 +90,7 @@ public class SubscriptionPlanController {
 
     @Operation(summary = "Filtrar por rango de precio")
     @GetMapping("/filter-price")
-    public ResponseEntity<List<SubscriptionPlanResponseDto>> getByPriceRange(
+    public ResponseEntity<List<SubscriptionPlanDto.Response>> getByPriceRange(
             @RequestParam BigDecimal min, @RequestParam BigDecimal max) {
         return ResponseEntity.ok(planService.findPlansByPriceRange(min, max));
     }

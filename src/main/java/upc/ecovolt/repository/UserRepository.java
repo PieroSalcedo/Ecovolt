@@ -23,19 +23,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /*
      * REGLA DE SEGURIDAD DINÁMICA: Criterio del Profesor.
      * Cruza las tablas mediante las clases de ID embebido para obtener los menús permitidos.
-     * Nota: 'ro.id' mapea a RoleHasOptionPK y 'ur.usuarioHasRolPk' a UsuarioHasRolPK.
+     * Nota: 'ro.id' mapea a RoleHasOptionPK y 'ur.userHasRolPk' a UserHasRolPK.
      */
     @Query("SELECT o FROM Option o " +
             "JOIN RoleHasOption ro ON o.idOption = ro.id.idOption " +
-            "JOIN UserHasRol ur ON ro.id.idRole = ur.usuarioHasRolPk.idRol " +
-            "WHERE ur.usuarioHasRolPk.idUser = ?1")
+            "JOIN UserHasRol ur ON ro.id.idRole = ur.userHasRolPk.idRol " +
+            "WHERE ur.userHasRolPk.idUser = ?1")
     List<Option> traerEnlacesDeUsuario(Long idUser);
 
     /*
      * REGLA DE SEGURIDAD: Autorización.
      * Obtiene los roles del usuario cruzando con la tabla intermedia.
      */
-    @Query("SELECT r FROM Role r JOIN UserHasRol ur ON r.idRole = ur.us WHERE ur.usuarioHasRolPk.idUser = ?1")
+    @Query("SELECT ur.role FROM UserHasRol ur WHERE ur.userHasRolPk.idUser = ?1")
     List<Role> traerRolesDeUsuario(Long idUser);
 
     /*

@@ -13,8 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.ecovolt.entity.Option;
 import upc.ecovolt.entity.Role;
-import upc.ecovolt.mapping.dto.userdto.UserRequestDto;
-import upc.ecovolt.mapping.dto.userdto.UserResponseDto;
+import upc.ecovolt.mapping.dto.UserDto;
 import upc.ecovolt.service.UserService;
 import upc.ecovolt.util.AppSettings;
 
@@ -31,7 +30,7 @@ public class UserController {
 
     @Operation(summary = "Listar todos los usuarios registrados", description = "Retorna el perfil básico de todos los usuarios del sistema")
     @GetMapping
-    public ResponseEntity<List<UserResponseDto>> getAll() {
+    public ResponseEntity<List<UserDto.Response>> getAll() {
         return ResponseEntity.ok(userService.findAllUsers());
     }
 
@@ -39,7 +38,7 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Usuario encontrado")
     @ApiResponse(responseCode = "404", description = "Usuario no existe")
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDto> getById(
+    public ResponseEntity<UserDto.Response> getById(
             @Parameter(description = "ID único del usuario", example = "1")
             @PathVariable Long id) {
         return userService.findUserById(id)
@@ -49,16 +48,16 @@ public class UserController {
 
     @Operation(summary = "Registrar un nuevo usuario", description = "Crea una cuenta, encripta la clave y asigna el Plan de Suscripción indicado")
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDto> register(@Valid @RequestBody UserRequestDto request) {
+    public ResponseEntity<UserDto.Response> register(@Valid @RequestBody UserDto.Request request) {
         return new ResponseEntity<>(userService.saveUser(request), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Actualizar perfil de usuario", description = "Modifica nombres, apellidos, email o el plan de suscripción")
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponseDto> update(
+    public ResponseEntity<UserDto.Response> update(
             @Parameter(description = "ID del usuario a modificar", example = "1")
             @PathVariable Long id,
-            @Valid @RequestBody UserRequestDto request) {
+            @Valid @RequestBody UserDto.Request request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
 

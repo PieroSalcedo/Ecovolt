@@ -7,17 +7,17 @@ import java.util.Optional;
 
 public interface EnergyGoalService {
 
-    List<EnergyGoalDto> findAll();
+    List<EnergyGoalDto.Response> findAll();
 
-    List<EnergyGoalDto> findCriticalGoals(Integer threshold);
+    List<EnergyGoalDto.Response> findCriticalGoals(Integer threshold);
 
-    Optional<EnergyGoalDto> findById(Integer id);
+    Optional<EnergyGoalDto.Response> findById(Integer id);
 
-    EnergyGoalDto save(EnergyGoalDto requestDto);
+    EnergyGoalDto.Response save(EnergyGoalDto.Request requestDto);
 
-    EnergyGoalDto update(Integer id, EnergyGoalDto requestDto);
+    EnergyGoalDto.Response update(Integer id, EnergyGoalDto.Request requestDto);
 
     void delete(Integer id);
 
-    List<EnergyGoalDto> findActiveGoalsByHome(Long idHome);
+    List<EnergyGoalDto.Response> findActiveGoalsByHome(Long idHome);
 }

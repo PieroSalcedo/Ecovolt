@@ -38,7 +38,7 @@ public class JwtProvider {
         claims.put("roles", roles);
 
         List<String> rutas = principal.getOpciones().stream()
-                .map(Option::getRuta).collect(Collectors.toList());
+                .map(Option::getRoute).collect(Collectors.toList());
         claims.put("options", rutas);
 
         return Jwts.builder()

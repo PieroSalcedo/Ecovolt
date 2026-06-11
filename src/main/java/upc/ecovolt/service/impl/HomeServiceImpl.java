@@ -6,9 +6,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.Home;
-import upc.ecovolt.mapping.dto.homedto.HomeMapper;
-import upc.ecovolt.mapping.dto.homedto.HomeRequestDto;
-import upc.ecovolt.mapping.dto.homedto.HomeResponseDto;
+import upc.ecovolt.mapping.dto.HomeDto;
+import upc.ecovolt.mapping.dto.HomeMapper;
 import upc.ecovolt.repository.DataCatalogRepository;
 import upc.ecovolt.repository.HomeRepository;
 import upc.ecovolt.repository.UserRepository;
@@ -26,7 +25,7 @@ public class HomeServiceImpl implements HomeService {
 
     private final HomeRepository homeRepository;
     private final UserRepository userRepository;
-    private final DataCatalogRepository dataCatalogoRepository;
+    private final DataCatalogRepository dataCatalogRepository;
     private final HomeMapper homeMapper;
 
     /**
@@ -45,7 +44,7 @@ public class HomeServiceImpl implements HomeService {
             Home home = homeRepository.findById(homeId)
                     .orElseThrow(() -> new RuntimeException("Error: Vivienda no encontrada."));
 
-            if (!home.getUser().getId().equals(principal.getIdUser())) {
+            if (!home.getUser().getIdUser().equals(principal.getIdUser())) {
                 log.error("VIOLACIÓN DE SEGURIDAD: El usuario {} intentó acceder a datos ajenos (Home ID: {})",
                         principal.getLogin(), homeId);
                 throw new RuntimeException("Acceso denegado: No tienes permisos sobre esta propiedad.");
@@ -55,21 +54,21 @@ public class HomeServiceImpl implements HomeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findAllHomes() {
+    public List<HomeDto.Response> findAllHomes() {
         // @PreAuthorize en la interfaz asegura que solo el Staff (Admin/Analyst) llegue aquí
         return homeMapper.toResponseDtoList(homeRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<HomeResponseDto> findHomeById(Long id) {
+    public Optional<HomeDto.Response> findHomeById(Long id) {
         validateOwnership(id); // Candado de propiedad
         return homeRepository.findById(id).map(homeMapper::toResponseDto);
     }
 
     @Override
     @Transactional
-    public HomeResponseDto saveHome(HomeRequestDto requestDto) {
+    public HomeDto.Response saveHome(HomeDto.Request requestDto) {
         var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         // REGLA DE SEGURIDAD: Un cliente no puede registrar casas para otros IDs de usuario
@@ -81,7 +80,7 @@ public class HomeServiceImpl implements HomeService {
         var user = userRepository.findById(requestDto.getUserId())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado."));
 
-        var propertyType = dataCatalogoRepository.findById(requestDto.getPropertyTypeId())
+        var propertyType = dataCatalogRepository.findById(requestDto.getPropertyTypeId())
                 .orElseThrow(() -> new RuntimeException("Tipo de propiedad no válido."));
 
         log.info("USER {}: Registrando propiedad '{}'", principal.getLogin(), requestDto.getAlias());
@@ -89,14 +88,14 @@ public class HomeServiceImpl implements HomeService {
         Home entity = homeMapper.toEntity(requestDto);
         entity.setUser(user);
         entity.setPropertyType(propertyType);
-        entity.setUsuarioRegistro(principal.getLogin()); // Auditoría con el login del token
+        entity.setCreatedBy(principal.getLogin()); // Auditoría con el login del token
 
         return homeMapper.toResponseDto(homeRepository.save(entity));
     }
 
     @Override
     @Transactional
-    public HomeResponseDto updateHome(Long id, HomeRequestDto requestDto) {
+    public HomeDto.Response updateHome(Long id, HomeDto.Request requestDto) {
         validateOwnership(id); // Solo el dueño o admin puede editar
 
         return homeRepository.findById(id).map(existingHome -> {
@@ -107,12 +106,12 @@ public class HomeServiceImpl implements HomeService {
             existingHome.setSquareMeters(requestDto.getSquareMeters().intValue());
 
             // Resolución de categoría si cambia
-            var type = dataCatalogoRepository.findById(requestDto.getPropertyTypeId())
+            var type = dataCatalogRepository.findById(requestDto.getPropertyTypeId())
                     .orElseThrow(() -> new RuntimeException("Tipo no encontrado"));
             existingHome.setPropertyType(type);
 
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
-            existingHome.setUsuarioActualizacion(username);
+            existingHome.setUpdatedBy(username);
 
             return homeMapper.toResponseDto(homeRepository.save(existingHome));
         }).orElseThrow(() -> new RuntimeException("Vivienda no encontrada"));
@@ -130,7 +129,7 @@ public class HomeServiceImpl implements HomeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findActiveHomesByUser(Long idUser) {
+    public List<HomeDto.Response> findActiveHomesByUser(Long idUser) {
         // La protección de que idUser sea el mismo del token está en la Interfaz (@PreAuthorize)
         var homes = homeRepository.findActiveHomesByUser(idUser);
         return homeMapper.toResponseDtoList(homes);
@@ -138,13 +137,13 @@ public class HomeServiceImpl implements HomeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findByPropertyTypeName(String propertyTypeDescription) {
+    public List<HomeDto.Response> findByPropertyTypeName(String propertyTypeDescription) {
         return homeMapper.toResponseDtoList(homeRepository.findByPropertyTypeName(propertyTypeDescription));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findHomesByHighTariff(BigDecimal tariffThreshold) {
+    public List<HomeDto.Response> findHomesByHighTariff(BigDecimal tariffThreshold) {
         return homeMapper.toResponseDtoList(homeRepository.findHomesByHighTariff(tariffThreshold));
     }
 
@@ -157,13 +156,13 @@ public class HomeServiceImpl implements HomeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findByAliasAndUserId(String alias, Long idUser) {
+    public List<HomeDto.Response> findByAliasAndUserId(String alias, Long idUser) {
         return homeMapper.toResponseDtoList(homeRepository.findByAliasAndUserId(alias, idUser));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findByCity(String city) {
+    public List<HomeDto.Response> findByCity(String city) {
         return homeMapper.toResponseDtoList(homeRepository.findByCity(city));
     }
 }

@@ -5,15 +5,13 @@ import lombok.Data;
 public class RoleDto {
     @Data
     public static class Request {
-        private String name;        // Ej: "ADMIN"
-        private String description; // Ej: "Administrador del sistema"
+        private String name;
     }
 
     @Data
     public static class Response {
         private Long idRole;
         private String name;
-        private String description;
         private Integer status;
     }
 }

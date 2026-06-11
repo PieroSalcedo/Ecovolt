@@ -7,9 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.Device;
 import upc.ecovolt.entity.EnergyReading;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingMapper;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingRequestDto;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingResponseDto;
+import upc.ecovolt.mapping.dto.EnergyReadingDto;
+import upc.ecovolt.mapping.dto.EnergyReadingMapper;
 import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.EnergyReadingRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
@@ -41,7 +40,7 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
         if (!isStaff) {
             Device device = deviceRepository.findById(deviceId)
                     .orElseThrow(() -> new RuntimeException("Error: Sensor no encontrado."));
-            if (!device.getRoom().getHome().getUser().getId().equals(principal.getIdUser())) {
+            if (!device.getRoom().getHome().getUser().getIdUser().equals(principal.getIdUser())) {
                 log.error("VIOLACIÓN DE PRIVACIDAD: El usuario {} intentó acceder a la telemetría del sensor ID: {}",
                         principal.getLogin(), deviceId);
                 throw new RuntimeException("Acceso denegado: No tienes permisos sobre este dispositivo.");
@@ -51,20 +50,20 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnergyReadingResponseDto> findAllReadings() {
+    public List<EnergyReadingDto.Response> findAllReadings() {
         return readingMapper.toResponseDtoList(readingRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<EnergyReadingResponseDto> findReadingById(Long id) {
+    public Optional<EnergyReadingDto.Response> findReadingById(Long id) {
         // En un sistema real, primero buscaríamos el ID del dispositivo de esta lectura
         return readingRepository.findById(id).map(readingMapper::toResponseDto);
     }
 
     @Override
     @Transactional
-    public EnergyReadingResponseDto saveReading(EnergyReadingRequestDto requestDto) {
+    public EnergyReadingDto.Response saveReading(EnergyReadingDto.Request requestDto) {
         // CIBERSEGURIDAD: Validar que el equipo que envía el dato pertenece al usuario
         validateDeviceOwnership(requestDto.getDeviceId());
 
@@ -112,14 +111,14 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnergyReadingResponseDto> findLatestReadingsByDevice(Long idDevice) {
+    public List<EnergyReadingDto.Response> findLatestReadingsByDevice(Long idDevice) {
         validateDeviceOwnership(idDevice);
         return readingMapper.toResponseDtoList(readingRepository.findLatestReadingsByDevice(idDevice));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnergyReadingResponseDto> findAbnormalConsumption(Long idDevice, BigDecimal threshold) {
+    public List<EnergyReadingDto.Response> findAbnormalConsumption(Long idDevice, BigDecimal threshold) {
         validateDeviceOwnership(idDevice);
         log.warn("AUDIT: Buscando fugas de energía en dispositivo {}", idDevice);
         return readingMapper.toResponseDtoList(readingRepository.findAbnormalConsumption(idDevice, threshold));

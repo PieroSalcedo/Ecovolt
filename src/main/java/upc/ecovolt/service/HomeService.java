@@ -8,25 +8,25 @@ import java.util.Optional;
 
 public interface HomeService {
 
-    List<HomeDto> findAllHomes();
+    List<HomeDto.Response> findAllHomes();
 
-    List<HomeDto> findByPropertyTypeName(String propertyTypeDescription);
+    List<HomeDto.Response> findByPropertyTypeName(String propertyTypeDescription);
 
-    List<HomeDto> findHomesByHighTariff(BigDecimal tariffThreshold);
+    List<HomeDto.Response> findHomesByHighTariff(BigDecimal tariffThreshold);
 
-    List<HomeDto> findByCity(String city);
+    List<HomeDto.Response> findByCity(String city);
 
-    List<HomeDto> findActiveHomesByUser(Long idUser);
+    List<HomeDto.Response> findActiveHomesByUser(Long idUser);
 
-    HomeDto saveHome(HomeDto requestDto);
+    HomeDto.Response saveHome(HomeDto.Request requestDto);
 
-    Optional<HomeDto> findHomeById(Long idHome);
+    Optional<HomeDto.Response> findHomeById(Long idHome);
 
-    HomeDto updateHome(Long idHome, HomeDto requestDto);
+    HomeDto.Response updateHome(Long idHome, HomeDto.Request requestDto);
 
     void delete(Long id);
 
     long countTotalDevicesByHome(Long idHome);
 
-    List<HomeDto> findByAliasAndUserId(String alias, Long idUser);
+    List<HomeDto.Response> findByAliasAndUserId(String alias, Long idUser);
 }

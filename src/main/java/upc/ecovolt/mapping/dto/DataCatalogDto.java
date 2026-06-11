@@ -5,16 +5,15 @@ import lombok.Data;
 public class DataCatalogDto {
     @Data
     public static class Request {
-        private String value;     // Ej: "Refrigeradora"
-        private Long idCatalog;   // ID del catálogo padre
+        private String description;
+        private Long idCatalog;
     }
 
     @Data
     public static class Response {
         private Long idDataCatalog;
-        private String value;
+        private String description;
         private Long idCatalog;
-        private String catalogName; // Nombre del catálogo padre para mostrar en tablas
-        private Integer status;
+        private String catalogName;
     }
 }

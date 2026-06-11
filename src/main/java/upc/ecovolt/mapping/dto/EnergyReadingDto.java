@@ -9,7 +9,7 @@ public class EnergyReadingDto {
     public static class Request {
         private BigDecimal wattage;
         private BigDecimal voltage;
-        private Long idDevice;
+        private Long deviceId;
     }
 
     @Data
@@ -18,5 +18,7 @@ public class EnergyReadingDto {
         private BigDecimal wattage;
         private BigDecimal voltage;
         private LocalDateTime readingAt;
+        private LocalDateTime createdAt;
+        private Long deviceId;
     }
 }

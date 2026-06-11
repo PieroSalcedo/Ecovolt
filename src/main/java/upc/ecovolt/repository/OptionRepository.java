@@ -30,5 +30,5 @@ public interface OptionRepository extends JpaRepository<Option, Integer> {
      * Sirve para verificar permisos de navegación en el Backend.
      */
     @Query("select o from Option o where o.route = ?1")
-    List<Option> findByRuta(String route);
+    List<Option> findByRoute(String route);
 }

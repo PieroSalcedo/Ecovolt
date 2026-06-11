@@ -8,9 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.Role;
 import upc.ecovolt.entity.User;
 import upc.ecovolt.entity.Option;
-import upc.ecovolt.mapping.dto.userdto.UserMapper;
-import upc.ecovolt.mapping.dto.userdto.UserRequestDto;
-import upc.ecovolt.mapping.dto.userdto.UserResponseDto;
+import upc.ecovolt.mapping.dto.UserDto;
+import upc.ecovolt.mapping.dto.UserMapper;
 import upc.ecovolt.repository.RoleRepository;
 import upc.ecovolt.repository.SubscriptionPlanRepository;
 import upc.ecovolt.repository.UserRepository;
@@ -33,19 +32,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserResponseDto> findAllUsers() {
-        return userMapper.toDtoList(userRepository.findAll());
+    public List<UserDto.Response> findAllUsers() {
+        return userMapper.toResponseDtoList(userRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<UserResponseDto> findUserById(Long id) {
-        return userRepository.findById(id).map(userMapper::toDto);
+    public Optional<UserDto.Response> findUserById(Long id) {
+        return userRepository.findById(id).map(userMapper::toResponseDto);
     }
 
     @Override
     @Transactional
-    public UserResponseDto saveUser(UserRequestDto requestDto) {
+    public UserDto.Response saveUser(UserDto.Request requestDto) {
         log.info("REGISTRO: Nuevo prospecto de cliente con login: {}", requestDto.getLogin());
 
         if (userRepository.findByLogin(requestDto.getLogin()).isPresent()) {
@@ -60,18 +59,18 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("Error interno: Plan base no configurado"));
         user.setSubscriptionPlan(freePlan);
 
-        Role customerRole = roleRepository.findByNombre("ROLE_CUSTOMER")
+        Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
                 .orElseThrow(() -> new RuntimeException("Error interno: Rol base no configurado"));
         user.setRoles(Set.of(customerRole));
 
-        user.setUsuarioRegistro("SELF_SERVICE");
+        user.setCreatedBy("SELF_SERVICE");
 
-        return userMapper.toDto(userRepository.save(user));
+        return userMapper.toResponseDto(userRepository.save(user));
     }
 
     @Override
     @Transactional
-    public UserResponseDto updateUser(Long id, UserRequestDto requestDto) {
+    public UserDto.Response updateUser(Long id, UserDto.Request requestDto) {
         return userRepository.findById(id).map(existingUser -> {
             // Un usuario normal no puede cambiarse a sí mismo el plan por DTO (SaaS Protection)
             // Solo si es ADMIN se permite cambiar el plan de suscripción
@@ -81,9 +80,9 @@ public class UserServiceImpl implements UserService {
             existingUser.setEmail(requestDto.getEmail());
 
             // Auditoría
-            existingUser.setUsuarioActualizacion(requestDto.getLogin());
+            existingUser.setUpdatedBy(requestDto.getLogin());
 
-            return userMapper.toDto(userRepository.save(existingUser));
+            return userMapper.toResponseDto(userRepository.save(existingUser));
         }).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
@@ -98,8 +97,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<UserResponseDto> findByLogin(String login) {
-        return userRepository.findByLogin(login).map(userMapper::toDto);
+    public Optional<UserDto.Response> findByLogin(String login) {
+        return userRepository.findByLogin(login).map(userMapper::toResponseDto);
     }
 
     @Override

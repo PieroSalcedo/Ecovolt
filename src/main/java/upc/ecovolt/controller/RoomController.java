@@ -10,8 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.ecovolt.mapping.dto.ApiResponseDto; // Importante
-import upc.ecovolt.mapping.dto.roomdto.RoomRequestDto;
-import upc.ecovolt.mapping.dto.roomdto.RoomResponseDto;
+import upc.ecovolt.mapping.dto.RoomDto;
 import upc.ecovolt.service.RoomService;
 import upc.ecovolt.util.AppSettings;
 
@@ -32,10 +31,10 @@ public class RoomController {
     @Operation(summary = "Registrar un nuevo ambiente", description = "Crea un cuarto vinculado a una casa (Ej: Cocina, Sala).")
     @ApiResponse(responseCode = "201", description = "Ambiente creado exitosamente")
     @PostMapping
-    public ResponseEntity<ApiResponseDto<RoomResponseDto>> create(@Valid @RequestBody RoomRequestDto request) {
+    public ResponseEntity<ApiResponseDto<RoomDto.Response>> create(@Valid @RequestBody RoomDto.Request request) {
         var data = roomService.saveRoom(request);
 
-        return new ResponseEntity<>(ApiResponseDto.<RoomResponseDto>builder()
+        return new ResponseEntity<>(ApiResponseDto.<RoomDto.Response>builder()
                 .title("¡Ambiente Registrado!")
                 .message("El cuarto '" + data.getName() + "' ha sido añadido correctamente a su vivienda.")
                 .status("SUCCESS")
@@ -45,13 +44,13 @@ public class RoomController {
 
     @Operation(summary = "Actualizar datos del ambiente", description = "Modifica el nombre, área o tipo de habitación.")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<RoomResponseDto>> update(
+    public ResponseEntity<ApiResponseDto<RoomDto.Response>> update(
             @Parameter(description = "ID del ambiente a modificar", example = "1") @PathVariable Long id,
-            @Valid @RequestBody RoomRequestDto request) {
+            @Valid @RequestBody RoomDto.Request request) {
 
         var data = roomService.updateRoom(id, request);
 
-        return ResponseEntity.ok(ApiResponseDto.<RoomResponseDto>builder()
+        return ResponseEntity.ok(ApiResponseDto.<RoomDto.Response>builder()
                 .title("Ambiente Actualizado")
                 .message("Los cambios en '" + data.getName() + "' se guardaron con éxito.")
                 .status("SUCCESS")
@@ -77,13 +76,13 @@ public class RoomController {
 
     @Operation(summary = "Listar todos los ambientes", description = "Uso administrativo/Staff")
     @GetMapping
-    public ResponseEntity<List<RoomResponseDto>> getAll() {
+    public ResponseEntity<List<RoomDto.Response>> getAll() {
         return ResponseEntity.ok(roomService.findAllRooms());
     }
 
     @Operation(summary = "Obtener un ambiente por ID")
     @GetMapping("/{id}")
-    public ResponseEntity<RoomResponseDto> getById(@PathVariable Long id) {
+    public ResponseEntity<RoomDto.Response> getById(@PathVariable Long id) {
         return roomService.findRoomById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -91,13 +90,13 @@ public class RoomController {
 
     @Operation(summary = "Listar ambientes de una casa")
     @GetMapping("/home/{homeId}")
-    public ResponseEntity<List<RoomResponseDto>> getByHome(@PathVariable Long homeId) {
+    public ResponseEntity<List<RoomDto.Response>> getByHome(@PathVariable Long homeId) {
         return ResponseEntity.ok(roomService.findByHomeId(homeId));
     }
 
     @Operation(summary = "Filtrar por tipo de ambiente (DataCatalogo)")
     @GetMapping("/type")
-    public ResponseEntity<List<RoomResponseDto>> getByType(@RequestParam String typeName) {
+    public ResponseEntity<List<RoomDto.Response>> getByType(@RequestParam String typeName) {
         return ResponseEntity.ok(roomService.findByRoomTypeName(typeName));
     }
 
@@ -109,14 +108,14 @@ public class RoomController {
 
     @Operation(summary = "Filtrar por piso y casa")
     @GetMapping("/home/{homeId}/floor/{floor}")
-    public ResponseEntity<List<RoomResponseDto>> getByFloor(
+    public ResponseEntity<List<RoomDto.Response>> getByFloor(
             @PathVariable Long homeId, @PathVariable Integer floor) {
         return ResponseEntity.ok(roomService.findByHomeAndFloor(homeId, floor));
     }
 
     @Operation(summary = "Buscar ambientes grandes (Área m2)")
     @GetMapping("/large-rooms")
-    public ResponseEntity<List<RoomResponseDto>> getLargeRooms(@RequestParam BigDecimal minArea) {
+    public ResponseEntity<List<RoomDto.Response>> getLargeRooms(@RequestParam BigDecimal minArea) {
         return ResponseEntity.ok(roomService.findLargeRooms(minArea));
     }
 }

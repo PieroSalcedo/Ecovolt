@@ -5,11 +5,11 @@ import java.util.List;
 
 public interface DataCatalogService {
 
-    List<DataCatalogDto> findAll();
+    List<DataCatalogDto.Response> findAll();
 
-    List<DataCatalogDto> findByCatalogDescription(String catalogDescription);
+    List<DataCatalogDto.Response> findByCatalogDescription(String catalogDescription);
 
-    List<DataCatalogDto> findByDescriptionAndCatalog(String description, String catalogDescription);
+    List<DataCatalogDto.Response> findByDescriptionAndCatalog(String description, String catalogDescription);
 
-    DataCatalogDto save(DataCatalogDto requestDto);
+    DataCatalogDto.Response save(DataCatalogDto.Request requestDto);
 }

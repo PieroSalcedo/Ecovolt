@@ -7,18 +7,21 @@ public class SubscriptionPlanDto {
     @Data
     public static class Request {
         private String name;
-        private String description;
-        private BigDecimal price;
-        private Integer durationDays; // Duración del plan
+        private BigDecimal monthlyPrice;
+        private Integer deviceLimit;
+        private Integer supportLevelId;
+        private String billingCycle;
     }
 
     @Data
     public static class Response {
         private Long idPlan;
         private String name;
-        private String description;
-        private BigDecimal price;
-        private Integer durationDays;
+        private BigDecimal monthlyPrice;
+        private Integer deviceLimit;
+        private Integer supportLevelId;
+        private String supportLevelDescription;
+        private String billingCycle;
         private Integer status;
     }
 }

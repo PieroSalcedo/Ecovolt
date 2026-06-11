@@ -5,17 +5,17 @@ import lombok.Data;
 public class OptionDto {
     @Data
     public static class Request {
-        private String name;        // Ej: "GESTION_DISPOSITIVOS"
-        private String description; // Ej: "Permite agregar y editar dispositivos"
-        private String url;         // Ruta del frontend si aplica
+        private String name;
+        private String route;
+        private Integer type;
     }
 
     @Data
     public static class Response {
-        private Long idOption;
+        private Integer idOption;
         private String name;
-        private String description;
-        private String url;
+        private String route;
+        private Integer type;
         private Integer status;
     }
 }

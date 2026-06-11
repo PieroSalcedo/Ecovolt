@@ -9,13 +9,13 @@ import java.util.Optional;
 
 public interface EnergyReadingService {
 
-    List<EnergyReadingDto> findAllReadings();
+    List<EnergyReadingDto.Response> findAllReadings();
 
     void delete(Long id);
 
-    Optional<EnergyReadingDto> findReadingById(Long id);
+    Optional<EnergyReadingDto.Response> findReadingById(Long id);
 
-    EnergyReadingDto saveReading(EnergyReadingDto requestDto);
+    EnergyReadingDto.Response saveReading(EnergyReadingDto.Request requestDto);
 
     BigDecimal sumWattageByDeviceAndPeriod(Long idDevice, LocalDateTime start, LocalDateTime end);
 
@@ -23,9 +23,9 @@ public interface EnergyReadingService {
 
     BigDecimal sumTotalConsumptionByHome(Long idHome, LocalDateTime start, LocalDateTime end);
 
-    List<EnergyReadingDto> findLatestReadingsByDevice(Long idDevice);
+    List<EnergyReadingDto.Response> findLatestReadingsByDevice(Long idDevice);
 
-    List<EnergyReadingDto> findAbnormalConsumption(Long idDevice, BigDecimal threshold);
+    List<EnergyReadingDto.Response> findAbnormalConsumption(Long idDevice, BigDecimal threshold);
 
     BigDecimal sumConsumptionByCategory(Long idHome, String categoryDescription, LocalDateTime start, LocalDateTime end);
 }
