@@ -13,6 +13,6 @@ public interface HomeMapper extends GenericMapper<Home, HomeDto.Request, HomeDto
     Home toEntity(HomeDto.Request requestDto);
 
     @Override
-    @Mapping(target = "ownerName", source = "user.name")
+    @Mapping(target = "ownerName", source = "user.firstName")
     HomeDto.Response toResponseDto(Home entity);
 }
