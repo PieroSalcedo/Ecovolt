@@ -1,8 +1,7 @@
 package upc.ecovolt.service;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanRequestDto;
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanResponseDto;
+import upc.ecovolt.mapping.dto.SubscriptionPlanDto;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,27 +12,27 @@ public interface SubscriptionPlanService {
     // --- ACCESO PÚBLICO / CUALQUIER ROL ---
 
     @PreAuthorize("permitAll()")
-    List<SubscriptionPlanResponseDto> findAllPlans();
+    List<SubscriptionPlanDto.Response> findAllPlans();
 
     @PreAuthorize("permitAll()")
-    Optional<SubscriptionPlanResponseDto> findPlanById(Integer id);
+    Optional<SubscriptionPlanDto.Response> findPlanById(Integer id);
 
     @PreAuthorize("permitAll()")
-    List<SubscriptionPlanResponseDto> findPlansByPriceRange(BigDecimal min, BigDecimal max);
+    List<SubscriptionPlanDto.Response> findPlansByPriceRange(BigDecimal min, BigDecimal max);
 
     /*
      * ESTE ES EL MÉTODO QUE FALTABA Y CAUSABA EL ERROR ROJO
      */
     @PreAuthorize("permitAll()")
-    List<SubscriptionPlanResponseDto> findBySupportLevelName(String supportLevel);
+    List<SubscriptionPlanDto.Response> findBySupportLevelName(String supportLevel);
 
     // --- ACCESO EXCLUSIVO STAFF (GESTIÓN) ---
 
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    SubscriptionPlanResponseDto savePlan(SubscriptionPlanRequestDto requestDto);
+    SubscriptionPlanDto.Response savePlan(SubscriptionPlanDto.Request requestDto);
 
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    SubscriptionPlanResponseDto updatePlan(Integer id, SubscriptionPlanRequestDto requestDto);
+    SubscriptionPlanDto.Response updatePlan(Integer id, SubscriptionPlanDto.Request requestDto);
 
     @PreAuthorize("hasRole('ADMIN')")
     void delete(Integer id);
@@ -46,7 +45,7 @@ public interface SubscriptionPlanService {
     // --- LÓGICA DE APOYO AL CLIENTE ---
 
     @PreAuthorize("isAuthenticated()")
-    List<SubscriptionPlanResponseDto> findUpgradeOptions(Integer currentLimit);
+    List<SubscriptionPlanDto.Response> findUpgradeOptions(Integer currentLimit);
 
     @PreAuthorize("isAuthenticated()")
     Integer getDeviceLimitById(Integer planId);

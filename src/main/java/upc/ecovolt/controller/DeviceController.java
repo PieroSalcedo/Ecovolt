@@ -11,8 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import upc.ecovolt.mapping.dto.ApiResponseDto;
-import upc.ecovolt.mapping.dto.devicedto.DeviceRequestDto;
-import upc.ecovolt.mapping.dto.devicedto.DeviceResponseDto;
+import upc.ecovolt.mapping.dto.DeviceDto;
 import upc.ecovolt.service.DeviceService;
 import upc.ecovolt.util.AppSettings;
 
@@ -34,9 +33,9 @@ public class DeviceController {
     @ApiResponse(responseCode = "201", description = "Dispositivo vinculado correctamente")
     @ApiResponse(responseCode = "400", description = "Límite de plan excedido o serial duplicado")
     @PostMapping
-    public ResponseEntity<ApiResponseDto<DeviceResponseDto>> create(@Valid @RequestBody DeviceRequestDto request) {
+    public ResponseEntity<ApiResponseDto<DeviceDto.Response>> create(@Valid @RequestBody DeviceDto.Request request) {
         var data = deviceService.saveDevice(request);
-        return new ResponseEntity<>(ApiResponseDto.<DeviceResponseDto>builder()
+        return new ResponseEntity<>(ApiResponseDto.<DeviceDto.Response>builder()
                 .title("¡Registro Exitoso!")
                 .message("El equipo '" + data.getName() + "' ha sido vinculado a tu red de ahorro.")
                 .status("SUCCESS")
@@ -47,12 +46,12 @@ public class DeviceController {
     @Operation(summary = "Actualizar configuración del equipo",
             description = "RESTRICTED: Solo el dueño. Permite actualizar nombre y firmware.")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<DeviceResponseDto>> update(
+    public ResponseEntity<ApiResponseDto<DeviceDto.Response>> update(
             @Parameter(description = "ID del dispositivo", example = "1") @PathVariable Long id,
-            @Valid @RequestBody DeviceRequestDto request) {
+            @Valid @RequestBody DeviceDto.Request request) {
 
         var data = deviceService.updateDevice(id, request);
-        return ResponseEntity.ok(ApiResponseDto.<DeviceResponseDto>builder()
+        return ResponseEntity.ok(ApiResponseDto.<DeviceDto.Response>builder()
                 .title("Actualización Completa")
                 .message("La configuración de " + data.getName() + " se guardó con éxito.")
                 .status("SUCCESS")
@@ -77,13 +76,13 @@ public class DeviceController {
 
     @Operation(summary = "Listar todos los dispositivos", description = "ADMIN/SUPPORT ONLY: Auditoría global de hardware.")
     @GetMapping
-    public ResponseEntity<List<DeviceResponseDto>> getAll() {
+    public ResponseEntity<List<DeviceDto.Response>> getAll() {
         return ResponseEntity.ok(deviceService.findAllDevices());
     }
 
     @Operation(summary = "Obtener un dispositivo por ID", description = "ACCESO POR PROPIEDAD: Detalles técnicos del sensor.")
     @GetMapping("/{id}")
-    public ResponseEntity<DeviceResponseDto> getById(@PathVariable Long id) {
+    public ResponseEntity<DeviceDto.Response> getById(@PathVariable Long id) {
         return deviceService.findDeviceById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -91,7 +90,7 @@ public class DeviceController {
 
     @Operation(summary = "Buscar por Número de Serie", description = "Utilizado para vinculación rápida vía QR o UUID.")
     @GetMapping("/serial/{serialNumber}")
-    public ResponseEntity<DeviceResponseDto> getBySerial(
+    public ResponseEntity<DeviceDto.Response> getBySerial(
             @Parameter(description = "Número de serie único", example = "SN-LIG-001") @PathVariable String serialNumber) {
         return deviceService.findBySerialNumber(serialNumber)
                 .map(ResponseEntity::ok)
@@ -100,7 +99,7 @@ public class DeviceController {
 
     @Operation(summary = "Listar dispositivos de una vivienda", description = "Muestra todo el ecosistema IoT de una propiedad.")
     @GetMapping("/home/{homeId}")
-    public ResponseEntity<List<DeviceResponseDto>> getByHome(@PathVariable Long homeId) {
+    public ResponseEntity<List<DeviceDto.Response>> getByHome(@PathVariable Long homeId) {
         return ResponseEntity.ok(deviceService.findByHomeId(homeId));
     }
 

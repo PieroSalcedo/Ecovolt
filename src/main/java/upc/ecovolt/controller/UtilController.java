@@ -5,8 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import upc.ecovolt.mapping.dto.datacatalogodto.DataCatalogoResponseDto;
-import upc.ecovolt.service.DataCatalogoService;
+import upc.ecovolt.mapping.dto.DataCatalogDto;
+import upc.ecovolt.service.DataCatalogService;
 import upc.ecovolt.util.AppSettings;
 
 import java.util.List;
@@ -18,30 +18,30 @@ import java.util.List;
 @CrossOrigin(origins = AppSettings.URL_CROSS_ORIGIN)
 public class UtilController {
 
-    private final DataCatalogoService dataCatalogoService;
+    private final DataCatalogService dataCatalogService;
 
     @Operation(summary = "Lista los tipos de habitaciones disponibles")
     @GetMapping("/room-types")
-    public ResponseEntity<List<DataCatalogoResponseDto>> listRoomTypes() {
+    public ResponseEntity<List<DataCatalogDto.Response>> listRoomTypes() {
         // Usamos la constante que definimos en AppSettings
-        return ResponseEntity.ok(dataCatalogoService.findByCatalogDescription("ROOM_TYPES"));
+        return ResponseEntity.ok(dataCatalogService.findByCatalogDescription("ROOM_TYPES"));
     }
 
     @Operation(summary = "Lista las categorías de dispositivos IoT")
     @GetMapping("/device-categories")
-    public ResponseEntity<List<DataCatalogoResponseDto>> listDeviceCategories() {
-        return ResponseEntity.ok(dataCatalogoService.findByCatalogDescription("DEVICE_CATEGORIES"));
+    public ResponseEntity<List<DataCatalogDto.Response>> listDeviceCategories() {
+        return ResponseEntity.ok(dataCatalogService.findByCatalogDescription("DEVICE_CATEGORIES"));
     }
 
     @Operation(summary = "Lista los niveles de soporte para los planes")
     @GetMapping("/support-levels")
-    public ResponseEntity<List<DataCatalogoResponseDto>> listSupportLevels() {
-        return ResponseEntity.ok(dataCatalogoService.findByCatalogDescription("SUPPORT_LEVELS"));
+    public ResponseEntity<List<DataCatalogDto.Response>> listSupportLevels() {
+        return ResponseEntity.ok(dataCatalogService.findByCatalogDescription("SUPPORT_LEVELS"));
     }
 
     @Operation(summary = "Lista los estados operativos de los equipos")
     @GetMapping("/device-status")
-    public ResponseEntity<List<DataCatalogoResponseDto>> listDeviceStatus() {
-        return ResponseEntity.ok(dataCatalogoService.findByCatalogDescription("DEVICE_STATUS"));
+    public ResponseEntity<List<DataCatalogDto.Response>> listDeviceStatus() {
+        return ResponseEntity.ok(dataCatalogService.findByCatalogDescription("DEVICE_STATUS"));
     }
 }

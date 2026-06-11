@@ -5,10 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.SubscriptionPlan;
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanMapper;
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanRequestDto;
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanResponseDto;
-import upc.ecovolt.repository.DataCatalogoRepository; // Necesario para resolver el catálogo
+import upc.ecovolt.mapping.dto.SubscriptionPlanDto;
+import upc.ecovolt.mapping.dto.SubscriptionPlanMapper;
+import upc.ecovolt.repository.DataCatalogRepository; // Necesario para resolver el catálogo
 import upc.ecovolt.repository.SubscriptionPlanRepository;
 import upc.ecovolt.service.SubscriptionPlanService;
 
@@ -22,25 +21,25 @@ import java.util.Optional;
 public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final DataCatalogoRepository dataCatalogoRepository;
+    private final DataCatalogRepository dataCatalogRepository;
     private final SubscriptionPlanMapper subscriptionPlanMapper;
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubscriptionPlanResponseDto> findAllPlans() {
+    public List<SubscriptionPlanDto.Response> findAllPlans() {
         return subscriptionPlanMapper.toResponseDtoList(subscriptionPlanRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<SubscriptionPlanResponseDto> findPlanById(Integer id) {
+    public Optional<SubscriptionPlanDto.Response> findPlanById(Integer id) {
         return subscriptionPlanRepository.findById(id)
                 .map(subscriptionPlanMapper::toResponseDto);
     }
 
     @Override
     @Transactional
-    public SubscriptionPlanResponseDto savePlan(SubscriptionPlanRequestDto requestDto) {
+    public SubscriptionPlanDto.Response savePlan(SubscriptionPlanDto.Request requestDto) {
         log.info("STAFF OPERATION: Creando nuevo plan de negocio: {}", requestDto.getName());
 
         // 1. DTO -> Entity
@@ -48,7 +47,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
         // 2. REGLA DE INTEGRIDAD: Resolvemos el objeto real de DataCatalogo
         // No guardamos un número, buscamos el "Nivel de Soporte" real en el diccionario
-        var supportLevel = dataCatalogoRepository.findById(requestDto.getSupportLevelId())
+        var supportLevel = dataCatalogRepository.findById(requestDto.getSupportLevelId())
                 .orElseThrow(() -> new RuntimeException("Error: El ID de nivel de soporte no existe en los catálogos."));
         entity.setSupportLevel(supportLevel);
 
@@ -57,7 +56,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
         String username = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication().getName();
 
-        entity.setUsuarioRegistro(username); // Quedará grabado como 'piero' o 'luis'
+        entity.setCreatedBy(username); // Quedará grabado como 'piero' o 'luis'
         entity.setStatus(1); // Activo por defecto
 
         var savedEntity = subscriptionPlanRepository.save(entity);
@@ -66,7 +65,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     @Override
     @Transactional
-    public SubscriptionPlanResponseDto updatePlan(Integer id, SubscriptionPlanRequestDto requestDto) {
+    public SubscriptionPlanDto.Response updatePlan(Integer id, SubscriptionPlanDto.Request requestDto) {
         log.info("STAFF OPERATION: Actualizando reglas del plan ID: {}", id);
 
         return subscriptionPlanRepository.findById(id).map(existingPlan -> {
@@ -77,14 +76,14 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
             existingPlan.setBillingCycle(requestDto.getBillingCycle());
 
             // Actualización de relación con catálogo
-            var supportLevel = dataCatalogoRepository.findById(requestDto.getSupportLevelId())
+            var supportLevel = dataCatalogRepository.findById(requestDto.getSupportLevelId())
                     .orElseThrow(() -> new RuntimeException("Nivel de soporte no encontrado"));
             existingPlan.setSupportLevel(supportLevel);
 
             // AUDITORÍA: Quién hizo la última modificación
             String username = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication().getName();
-            existingPlan.setUsuarioActualizacion(username);
+            existingPlan.setUpdatedBy(username);
 
             var updated = subscriptionPlanRepository.save(existingPlan);
             return subscriptionPlanMapper.toResponseDto(updated);
@@ -105,14 +104,14 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubscriptionPlanResponseDto> findPlansByPriceRange(BigDecimal min, BigDecimal max) {
+    public List<SubscriptionPlanDto.Response> findPlansByPriceRange(BigDecimal min, BigDecimal max) {
         var plans = subscriptionPlanRepository.findPlansByPriceRange(min, max);
         return subscriptionPlanMapper.toResponseDtoList(plans);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubscriptionPlanResponseDto> findBySupportLevelName(String supportLevel) {
+    public List<SubscriptionPlanDto.Response> findBySupportLevelName(String supportLevel) {
         // Usa la lógica del JOIN con DataCatalogo que definimos en el Repo
         var plans = subscriptionPlanRepository.findBySupportLevelName(supportLevel);
         return subscriptionPlanMapper.toResponseDtoList(plans);
@@ -126,7 +125,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubscriptionPlanResponseDto> findUpgradeOptions(Integer currentLimit) {
+    public List<SubscriptionPlanDto.Response> findUpgradeOptions(Integer currentLimit) {
         log.info("Buscando opciones de Upselling para límite actual: {}", currentLimit);
         var plans = subscriptionPlanRepository.findUpgradeOptions(currentLimit);
         return subscriptionPlanMapper.toResponseDtoList(plans);

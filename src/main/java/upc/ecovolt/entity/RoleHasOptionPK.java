@@ -21,8 +21,8 @@ public class RoleHasOptionPK implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Column(name = "id_rol")
-    private Integer idRol;
+    @Column(name = "id_role")
+    private Integer idRole;
 
     @Column(name = "id_option")
     private Integer idOption;

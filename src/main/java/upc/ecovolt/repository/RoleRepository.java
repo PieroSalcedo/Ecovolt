@@ -15,14 +15,14 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
      * Busca un rol por su nombre único (Ej: 'ROLE_CUSTOMER').
      * Es vital durante el registro de nuevos usuarios para asignar el rol por defecto.
      */
-    @Query("select r from Role r where r.nombre = ?1")
-    Optional<Role> findByNombre(String nombre);
+    @Query("select r from Role r where r.name = ?1")
+    Optional<Role> findByName(String name);
 
     /*
      * REGLA DE NEGOCIO: Auditoría de Seguridad.
      * Lista solo los roles que están habilitados en el sistema.
      */
-    @Query("select r from Role r where r.estado = 1")
+    @Query("select r from Role r where r.status = 1")
     List<Role> findActiveRoles();
 
     /*
@@ -30,6 +30,6 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
      * Cuenta cuántos usuarios tienen asignado un rol específico.
      * Cruce: Role -> User (a través de la relación ManyToMany).
      */
-    @Query("select count(u) from User u join u.roles r where r.idRol = ?1")
-    long countUsersByRoleId(Integer idRol);
+    @Query("select count(u) from User u join u.roles r where r.idRole = ?1")
+    long countUsersByRoleId(Integer idRole);
 }
