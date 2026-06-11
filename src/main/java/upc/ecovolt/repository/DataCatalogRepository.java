@@ -1,26 +1,34 @@
 package upc.ecovolt.repository;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
 import upc.ecovolt.entity.DataCatalog;
 
-@Repository
 public interface DataCatalogRepository extends JpaRepository<DataCatalog, Integer> {
 
     /*
-     * REGLA DE NEGOCIO: Carga de Diccionarios (Estilo SUNAT).
-     * Obtiene todos los ítems de una categoría usando el nombre del catálogo.
-     * Ejemplo: "Tráeme todo lo que pertenezca a 'ROOM_TYPES'".
+     * REGLA DE NEGOCIO: Carga de Selects/Combos para el Frontend.
+     * Obtiene los valores de un catálogo específico ordenados alfabéticamente.
+     * Ejemplo: "Traer todas las habitaciones (SALA, COCINA)" filtrando por 'TIPO_HABITACION'.
      */
-    @Query("select d from DataCatalog d where d.catalog.description = ?1")
-    List<DataCatalog> findByCatalogDescription(String catalogDescription);
+    List<DataCatalog> findByCatalog_DescriptionOrderByDescriptionAsc(String catalogDescription);
 
     /*
-     * REGLA DE NEGOCIO: Búsqueda exacta.
-     * Busca un ítem específico (Ej: 'Kitchen') dentro de un catálogo.
+     * REGLA DE NEGOCIO: Filtrado por ID de Catálogo.
+     * Muy útil para el Frontend cuando ya se tiene el ID de la categoría maestra.
      */
-    @Query("select d from DataCatalog d where d.description = ?1 and d.catalog.description = ?2")
-    List<DataCatalog> findByDescriptionAndCatalog(String description, String catalogDescription);
+    List<DataCatalog> findByCatalog_IdCatalog(Integer idCatalog);
+
+    /*
+     * REGLA DE NEGOCIO: Búsqueda de valor específico dentro de un grupo.
+     * Se usa para validar si un ítem (ej. 'Dormitorio') ya existe dentro de un catálogo.
+     */
+    Optional<DataCatalog> findByDescriptionAndCatalog_Description(String description, String catalogDescription);
+
+    /*
+     * REGLA DE NEGOCIO: Buscador dinámico (Autocomplete).
+     * Permite al usuario buscar opciones por nombre ignorando mayúsculas/minúsculas.
+     */
+    List<DataCatalog> findByDescriptionContainingIgnoreCase(String description);
 }

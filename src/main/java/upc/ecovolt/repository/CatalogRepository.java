@@ -1,18 +1,28 @@
 package upc.ecovolt.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
 import upc.ecovolt.entity.Catalog;
+import java.util.List;
 import java.util.Optional;
 
-@Repository
 public interface CatalogRepository extends JpaRepository<Catalog, Integer> {
+    /*
+     * REGLA DE NEGOCIO: Búsqueda por descripción exacta.
+     * Al ser un método de consulta derivado, Spring lo resuelve automáticamente
+     * sin necesidad de escribir el @Query de forma manual.
+     */
+    Optional<Catalog> findByDescription(String description);
 
     /*
-     * REGLA DE NEGOCIO: Buscar categoría maestra por nombre.
-     * Ejemplo: Buscar 'ROOM_TYPES' para verificar si el catálogo existe.
+     * REGLA DE NEGOCIO: Búsqueda dinámica para el Frontend.
+     * Permite filtrar el catálogo por nombre mientras el usuario escribe,
+     * ignorando mayúsculas y minúsculas (ideal para tablas con buscadores).
      */
-    @Query("select c from Catalog c where c.description = ?1")
-    Optional<Catalog> findByDescription(String description);
+    List<Catalog> findByDescriptionContainingIgnoreCase(String description);
+
+    /*
+     * REGLA DE NEGOCIO: Validación de Duplicidad.
+     * Antes de guardar un nuevo catálogo, verificamos si ya existe la descripción.
+     */
+    boolean existsByDescription(String description);
 }
