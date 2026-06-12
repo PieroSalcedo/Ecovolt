@@ -10,9 +10,10 @@ public interface HomeMapper extends GenericMapper<Home, HomeDto.Request, HomeDto
 
     @Override
     @Mapping(target = "user.idUser", source = "idUser")
+    @Mapping(target = "propertyType.idDataCatalog", source = "idPropertyType")
     Home toEntity(HomeDto.Request requestDto);
 
     @Override
-    @Mapping(target = "ownerName", source = "user.firstName")
+    @Mapping(target = "ownerName", source = "user.login")
     HomeDto.Response toResponseDto(Home entity);
 }
