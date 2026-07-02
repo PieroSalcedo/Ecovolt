@@ -227,3 +227,16 @@ INSERT INTO public.device ("name", serial_number, manufacturer, firmware_version
 INSERT INTO public.energy_reading (wattage, voltage, id_device, reading_at, status) VALUES
 (0.50, 220.0, 1, NOW(), 1),
 (1.20, 220.0, 2, NOW(), 1);
+
+-- 1. Aseguramos que existe el catálogo maestro
+INSERT INTO public."catalog" (description) VALUES ('TIPO_PROPIEDAD');
+
+-- 2. Insertamos las opciones (Asumiendo que el ID del catálogo anterior es 1)
+-- Si ya tenías datos, verifica el ID.
+INSERT INTO public.data_catalog (id_catalog, description, status) VALUES
+(1, 'Casa Independiente', 1),
+(1, 'Departamento', 1),
+(1, 'Local Comercial', 1),
+(1, 'Oficina', 1),
+(1, 'Casa de Campo', 1);
+

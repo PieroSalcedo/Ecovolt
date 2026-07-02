@@ -15,5 +15,8 @@ public interface HomeMapper extends GenericMapper<Home, HomeDto.Request, HomeDto
 
     @Override
     @Mapping(target = "ownerName", source = "user.login")
+    // Usamos expresiones para evitar el NullPointerException si no hay tipo definido
+    @Mapping(target = "propertyTypeName", expression = "java(entity.getPropertyType() != null ? entity.getPropertyType().getDescription() : \"Sin Tipo\")")
+    @Mapping(target = "idPropertyType", expression = "java(entity.getPropertyType() != null ? entity.getPropertyType().getIdDataCatalog() : null)")
     HomeDto.Response toResponseDto(Home entity);
 }

@@ -10,10 +10,12 @@ public interface DataCatalogMapper extends GenericMapper<DataCatalog, DataCatalo
 
     @Override
     @Mapping(target = "catalog.idCatalog", source = "idCatalog")
+    @Mapping(target = "description", source = "value")
     DataCatalog toEntity(DataCatalogDto.Request requestDto);
 
     @Override
     @Mapping(target = "idCatalog", source = "catalog.idCatalog")
     @Mapping(target = "catalogName", source = "catalog.description")
+    @Mapping(target = "value", source = "description")
     DataCatalogDto.Response toResponseDto(DataCatalog entity);
 }

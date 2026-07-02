@@ -24,7 +24,6 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Activa @PreAuthorize en los Services
 public class SecurityConfig {
 
     @Autowired

@@ -1,25 +1,31 @@
 package upc.ecovolt.controller;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import upc.ecovolt.entity.Home;
+import upc.ecovolt.entity.User;
 import upc.ecovolt.mapping.dto.ApiResponseDto;
 import upc.ecovolt.mapping.dto.HomeDto;
 import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.HomeService;
-import upc.ecovolt.util.WebUtil;
 import upc.ecovolt.util.AppSettings;
+import upc.ecovolt.util.WebUtil;
 
 import java.util.List;
 
-@Tag(name = "Homes", description = "Gestión de propiedades y viviendas")
+@Tag(name = "Homes", description = "Gestión de propiedades")
 @RestController
 @RequestMapping("/api/v1/homes")
 @RequiredArgsConstructor
-@CrossOrigin(origins = AppSettings.URL_CROSS_ORIGIN) // Conexión con el Front
+@CrossOrigin(origins = AppSettings.URL_CROSS_ORIGIN)
+@Slf4j
 public class HomeController {
 
     private final HomeService homeService;
@@ -30,14 +36,16 @@ public class HomeController {
             @RequestParam(defaultValue = "") String city,
             @RequestParam(defaultValue = "-1") int idTipo) {
 
-        var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        var data = homeService.consultaHomeDinamica(principal.getIdUser(), alias, city, idTipo);
+        UsuarioPrincipal principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        return WebUtil.ok(data, "Resultados encontrados");
+        // Llamamos al service que ahora devuelve DTOs
+        List<HomeDto.Response> listaDto = homeService.consultaHomeDinamica(principal.getIdUser(), alias, city, idTipo);
+
+        return WebUtil.ok(listaDto, "Viviendas cargadas con éxito");
     }
 
     // --- REGISTRO ---
-    @PostMapping
+    @PostMapping("/registra")
     @Operation(summary = "Registrar vivienda", description = "Si es Customer, se ignora el idUser y se asigna el suyo.")
     public ResponseEntity<ApiResponseDto<HomeDto.Response>> save(@RequestBody HomeDto.Request request) {
         var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -61,11 +69,11 @@ public class HomeController {
     }
 
     // --- ELIMINACIÓN ---
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar vivienda", description = "Borrado lógico (status=0)")
+    @DeleteMapping("/elimina/{id}") // Asegúrate de que diga "/elimina/{id}"
     public ResponseEntity<ApiResponseDto<Void>> delete(@PathVariable Long id) {
+        log.info("Eliminando vivienda con ID: {}", id);
         homeService.delete(id);
-        return WebUtil.ok(null, "La propiedad ha sido removida del sistema.");
+        return WebUtil.ok(null, "Vivienda eliminada correctamente");
     }
 
     // --- CONSULTAS ---

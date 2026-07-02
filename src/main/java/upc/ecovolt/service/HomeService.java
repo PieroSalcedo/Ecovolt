@@ -1,5 +1,6 @@
 package upc.ecovolt.service;
 
+import upc.ecovolt.entity.Home;
 import upc.ecovolt.mapping.dto.HomeDto;
 
 import java.math.BigDecimal;

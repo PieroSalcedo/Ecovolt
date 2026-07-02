@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import upc.ecovolt.entity.DataCatalog;
 import upc.ecovolt.entity.Home;
 import upc.ecovolt.mapping.dto.HomeDto;
 import upc.ecovolt.mapping.dto.HomeMapper;
@@ -48,8 +49,9 @@ public class HomeServiceImpl implements HomeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<HomeDto.Response> consultaHomeDinamica(Long idUser, String alias, String city, int idTipo) {
-        var lista = homeRepository.consultaDinamica(idUser, "%" + alias.toLowerCase() + "%", city, idTipo);
+        List<Home> lista = homeRepository.consultaHomeDinamica(idUser, alias, city, idTipo);
         return homeMapper.toResponseDtoList(lista);
     }
 
@@ -95,12 +97,19 @@ public class HomeServiceImpl implements HomeService {
     @Override
     @Transactional
     public HomeDto.Response updateHome(Long idHome, HomeDto.Request requestDto) {
-        validateOwnership(idHome);
-
         return homeRepository.findById(idHome).map(existing -> {
             existing.setAddress(requestDto.getAddress());
-            // Si el DTO tuviera city, alias, energyTariff, etc., se actualizarían aquí
-            // Ejemplo: existing.setAlias(requestDto.getAlias());
+            existing.setAlias(requestDto.getAlias());
+            existing.setCity(requestDto.getCity());
+            existing.setEnergyTariff(requestDto.getEnergyTariff());
+            existing.setSquareMeters(requestDto.getSquareMeters());
+
+            // Actualizar tipo de propiedad
+            if (requestDto.getIdPropertyType() != null) {
+                DataCatalog type = new DataCatalog();
+                type.setIdDataCatalog(requestDto.getIdPropertyType());
+                existing.setPropertyType(type);
+            }
 
             return homeMapper.toResponseDto(homeRepository.save(existing));
         }).orElseThrow(() -> new RuntimeException("Vivienda no encontrada"));

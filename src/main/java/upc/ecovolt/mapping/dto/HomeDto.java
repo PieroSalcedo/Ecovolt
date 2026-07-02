@@ -7,11 +7,11 @@ public class HomeDto {
     @Data
     public static class Request {
         private String address;
-        private String city;         // Agregado
-        private String alias;        // Agregado (Importante para el error)
-        private BigDecimal energyTariff; // Agregado
-        private Integer squareMeters;    // Agregado
-        private Integer idPropertyType;  // ID del catálogo
+        private String city;
+        private String alias;
+        private BigDecimal energyTariff;
+        private Integer squareMeters;
+        private Integer idPropertyType;
         private Long idUser;
     }
 
@@ -19,8 +19,14 @@ public class HomeDto {
     public static class Response {
         private Long idHome;
         private String address;
-        private String city;         // Agregado
-        private String alias;        // Agregado (Soluciona el error)
-        private String ownerName;
+        private String city;
+        private String alias;
+        private BigDecimal energyTariff;
+        private Integer squareMeters;
+
+        // ESTOS 3 CAMPOS SON LOS QUE HACÍAN FALLAR EL REBUILD:
+        private Integer idPropertyType;   // Para que el lapicito cargue el combo
+        private String propertyTypeName;  // Para mostrar 'Casa' o 'Depa'
+        private String ownerName;         // Para identificar al dueño
     }
 }
