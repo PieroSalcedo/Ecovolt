@@ -172,71 +172,119 @@ CREATE TABLE public.energy_reading (
 	CONSTRAINT fkctlidwuqld85gcgdlle6dxktf FOREIGN KEY (id_device) REFERENCES public.device(id_device)
 );
 
+
+-- Desactivar triggers temporalmente para evitar errores de FK durante el truncado
+TRUNCATE TABLE public.energy_reading RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.device RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.energy_goal RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.room RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.home RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.users_has_roles RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.users RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.rol_has_option RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.subscription_plan RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public.data_catalog RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public."role" RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public."option" RESTART IDENTITY CASCADE;
+TRUNCATE TABLE public."catalog" RESTART IDENTITY CASCADE;
+
+
 -- =========================================================
--- DATA INICIAL DE PRUEBA
+-- 2. CATÁLOGOS Y OPCIONES DE MENÚ
 -- =========================================================
 INSERT INTO public."catalog" (description) VALUES
-('TIPO_PROPIEDAD'), ('TIPO_HABITACION'), ('CATEGORIA_EQUIPO'), ('NIVEL_SOPORTE');
+('TIPO_PROPIEDAD'), ('TIPO_HABITACION'), ('CATEGORIA_DISPOSITIVO'), ('NIVEL_SOPORTE');
 
 INSERT INTO public.data_catalog (id_catalog, description, status) VALUES
-(1, 'Casa Independiente', 1), (1, 'Departamento', 1), (1, 'Oficina', 1),
-(2, 'Sala', 1), (2, 'Cocina', 1), (2, 'Dormitorio Principal', 1),
-(3, 'Iluminación', 1), (3, 'Climatización', 1), (3, 'Línea Blanca', 1),
-(4, 'Soporte Básico', 1), (4, 'Soporte Premium (24/7)', 1);
-
-INSERT INTO public.subscription_plan ("name", device_limit, monthly_price, billing_cycle, id_support_level, status) VALUES
-('Plan Essential', 5, 19.90, 'MENSUAL', 10, 1),
-('Plan Pro', 20, 49.90, 'MENSUAL', 11, 1),
-('Plan Unlimited', 999, 99.90, 'ANUAL', 11, 1);
-
-INSERT INTO public."role" ("name", status) VALUES ('ROLE_ADMIN', 1), ('ROLE_STAFF', 1), ('ROLE_CUSTOMER', 1);
+(1, 'Casa Independiente', 1), (1, 'Departamento', 1), (1, 'Oficina', 1), (1, 'Casa de Campo', 1), (1, 'Local Comercial', 1),
+(2, 'Sala', 1), (2, 'Cocina', 1), (2, 'Habitación Principal', 1), (2, 'Baño', 1), (2, 'Garaje', 1), (2, 'Estudio', 1),
+(3, 'Iluminación', 1), (3, 'Línea Blanca', 1), (3, 'Climatización', 1), (3, 'Entretenimiento', 1),
+(4, 'Soporte Básico', 1), (4, 'Soporte Premium', 1);
 
 INSERT INTO public."option" ("name", route, "type", status) VALUES
 ('Registrar Vivienda', 'vivienda/registro', 1, 1),
-('Registrar Cuarto', 'cuarto/registro', 1, 1),
-('Registrar Dispositivo', 'dispositivo/registro', 1, 1),
-('Consulta Consumo', 'consumo/consulta', 2, 1),
-('Consulta Alertas', 'alertas/consulta', 2, 1),
-('Mis Viviendas', 'vivienda/mantenimiento', 3, 1),
-('Mis Cuartos', 'cuarto/mantenimiento', 3, 1),
-('Mis Dispositivos', 'dispositivo/mantenimiento', 3, 1),
-('Actualizar Mi Plan', 'usuario/plan', 4, 1),
-('Gestión de Usuarios', 'admin/usuarios', 3, 1);
+('Consultar Viviendas', 'vivienda/mantenimiento', 2, 1);
 
-INSERT INTO public.rol_has_option (id_role, id_option) VALUES
-(1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10),
-(3,1),(3,2),(3,3),(3,4),(3,5),(3,6),(3,7),(3,8),(3,9);
+-- =========================================================
+-- 3. PLANES, ROLES Y USUARIO ALONSO
+-- =========================================================
+INSERT INTO public.subscription_plan ("name", device_limit, monthly_price, billing_cycle, id_support_level, status) VALUES
+('Plan Essential', 5, 19.90, 'MENSUAL', 16, 1),
+('Plan Pro', 50, 49.90, 'MENSUAL', 17, 1),
+('Plan Unlimited', 999, 99.90, 'ANUAL', 17, 1);
 
+INSERT INTO public."role" ("name", status) VALUES ('ROLE_CUSTOMER', 1), ('ROLE_ADMIN', 1);
+
+-- Usuario: alonso | Pass: alonso2026
 INSERT INTO public.users (login, password, email, first_name, last_name, status, id_plan) VALUES
-('piero', '$2a$10$7Z/zwEFEV3L14ghsKapFj.tZKLiBvqCR84PwnN9jG/bzW', 'admin@ecovolt.com', 'Piero', 'Admin', 1, 3),
-('alonso', '$2a$10$7Z/zwEFEV3L14ghsKapFj.tZKLiBvqCR84PwnN9jG/bzW', 'alonso@gmail.com', 'Alonso', 'Customer', 1, 1);
+('alonso', '$2a$10$3075yJpURn5MO5CT8TezAO2I0jRQUtfo9fHFa1wokSDO1Uqp54C1y', 'alonso@gmail.com', 'Alonso', 'Customer', 1, 3);
 
-INSERT INTO public.users_has_roles (id_user, id_rol) VALUES (1, 1), (2, 3);
+INSERT INTO public.users_has_roles (id_user, id_rol) VALUES (1, 1);
+INSERT INTO public.rol_has_option (id_role, id_option) VALUES (1, 1), (1, 2);
 
-INSERT INTO public.home (alias, address, city, square_meters, energy_tariff, id_property_type, id_user, status)
-VALUES ('Casa San Borja', 'Av. Las Artes 123', 'Lima', 120, 0.65, 1, 2, 1);
+-- =========================================================
+-- 4. LOCURA DE DATOS: 20 VIVIENDAS PARA ALONSO
+-- =========================================================
+INSERT INTO public.home (alias, address, city, square_meters, energy_tariff, id_property_type, id_user, status) VALUES
+('Mansión San Borja', 'Av. Las Artes 123', 'Lima', 450, 0.65, 1, 1, 1),
+('Penthouse Miraflores', 'Malecón Cisneros 450', 'Lima', 180, 0.70, 2, 1, 1),
+('Oficina San Isidro', 'Av. Rivera Navarrete 210', 'Lima', 90, 0.85, 3, 1, 1),
+('Casa Playa Asia', 'Condominio Las Palmas', 'Cañete', 300, 0.55, 4, 1, 1),
+('Local Comercial Surco', 'Av. El Polo 789', 'Lima', 120, 0.95, 5, 1, 1),
+('Depa Barranco', 'Jr. Unión 150', 'Lima', 65, 0.68, 2, 1, 1),
+('Casa La Molina', 'Calle Los Fresnos 45', 'Lima', 550, 0.72, 1, 1, 1),
+('Oficina Centro', 'Av. Abancay 101', 'Lima', 40, 0.50, 3, 1, 1),
+('Casa de Campo Huaral', 'Fundo El Olivar', 'Huaral', 1000, 0.45, 4, 1, 1),
+('Depa San Miguel', 'Av. Costanera 300', 'Lima', 75, 0.60, 2, 1, 1),
+('Consultorio Médico', 'Av. Guardia Civil', 'Lima', 50, 0.88, 3, 1, 1),
+('Mini Depa Lince', 'Av. Arequipa 1500', 'Lima', 45, 0.62, 2, 1, 1),
+('Casona Chorrillos', 'Malecón Grau', 'Lima', 280, 0.58, 1, 1, 1),
+('Tienda de Ropa', 'Gamarra 456', 'Lima', 30, 1.10, 5, 1, 1),
+('Almacén Ate', 'Av. Nicolas Ayllón', 'Lima', 800, 0.40, 5, 1, 1),
+('Casa Pueblo Libre', 'Av. Bolivar', 'Lima', 160, 0.64, 1, 1, 1),
+('Oficina Magdalena', 'Av. Javier Prado 200', 'Lima', 110, 0.82, 3, 1, 1),
+('Casa Los Olivos', 'Av. Antúnez de Mayolo', 'Lima', 140, 0.55, 1, 1, 1),
+('Studio Creativo', 'Calle Grimaldo del Solar', 'Lima', 55, 0.78, 2, 1, 1),
+('Hacienda Ica', 'Km 300 Panamericana', 'Ica', 2000, 0.42, 4, 1, 1);
 
-INSERT INTO public.room ("name", floor_number, area_sqm, id_room_type, id_home, status) VALUES
-('Sala Principal', 1, 35.5, 4, 1, 1),
-('Cocina', 1, 15.0, 5, 1, 1);
+-- =========================================================
+-- 5. LOCURA DE DATOS: 4 CUARTOS POR CADA CASA (80 Cuartos)
+-- =========================================================
+DO $$
+BEGIN
+    FOR i IN 1..20 LOOP
+        INSERT INTO public.room ("name", floor_number, area_sqm, id_room_type, id_home, status) VALUES
+        ('Sala Principal ' || i, 1, 40, 6, i, 1),
+        ('Cocina ' || i, 1, 15, 7, i, 1),
+        ('Dormitorio ' || i, 1, 20, 8, i, 1),
+        ('Baño ' || i, 1, 8, 9, i, 1);
+    END LOOP;
+END $$;
 
-INSERT INTO public.device ("name", serial_number, manufacturer, firmware_version, id_category, id_room, status) VALUES
-('Luz Techo Sala', 'MAC-001-LIMA', 'Philips', 'v1.2', 7, 1, 1),
-('Refrigeradora', 'MAC-003-REF', 'Samsung', 'v4.5', 9, 2, 1);
+-- =========================================================
+-- 6. LOCURA DE DATOS: 2 DISPOSITIVOS POR CUARTO (160 Equipos)
+-- =========================================================
+DO $$
+BEGIN
+    FOR r IN 1..80 LOOP
+        INSERT INTO public.device ("name", serial_number, manufacturer, id_category, id_room, status) VALUES
+        ('Foco Inteligente R' || r, 'SN-BULB-' || r, 'Xiaomi', 12, r, 1),
+        ('Sensor Consumo R' || r, 'SN-SENS-' || r, 'Ecovolt-Hardware', 14, r, 1);
+    END LOOP;
+END $$;
 
-INSERT INTO public.energy_reading (wattage, voltage, id_device, reading_at, status) VALUES
-(0.50, 220.0, 1, NOW(), 1),
-(1.20, 220.0, 2, NOW(), 1);
+-- =========================================================
+-- 7. LECTURAS HISTÓRICAS (Para llenar las tablas de telemetría)
+-- =========================================================
+INSERT INTO public.energy_reading (wattage, voltage, id_device, reading_at, status)
+SELECT
+    random() * 2.5,
+    220 + (random() * 5),
+    id_device,
+    NOW() - (interval '1 hour' * generate_series(1, 10)),
+    1
+FROM public.device;
 
--- 1. Aseguramos que existe el catálogo maestro
-INSERT INTO public."catalog" (description) VALUES ('TIPO_PROPIEDAD');
+select * from users u
 
--- 2. Insertamos las opciones (Asumiendo que el ID del catálogo anterior es 1)
--- Si ya tenías datos, verifica el ID.
-INSERT INTO public.data_catalog (id_catalog, description, status) VALUES
-(1, 'Casa Independiente', 1),
-(1, 'Departamento', 1),
-(1, 'Local Comercial', 1),
-(1, 'Oficina', 1),
-(1, 'Casa de Campo', 1);
-
+select * from home h
