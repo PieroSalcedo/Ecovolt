@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import upc.ecovolt.mapping.dto.ApiResponseDto;
 import upc.ecovolt.mapping.dto.UserDto;
+import upc.ecovolt.mapping.dto.OptionDto;
 import upc.ecovolt.mapping.dto.auth.JwtResponseDto;
 import upc.ecovolt.mapping.dto.auth.LoginRequestDto;
 import upc.ecovolt.security.JwtProvider;
@@ -34,7 +35,7 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
-    private final UserService userService; // Agregado para el registro
+    private final UserService userService;
 
     @Operation(summary = "Iniciar sesión", description = "Autentica al usuario y devuelve el Token JWT.")
     @PostMapping("/login")
@@ -53,8 +54,10 @@ public class AuthController {
                 .map(auth -> auth.getAuthority())
                 .collect(Collectors.toList());
 
+        List<OptionDto.Response> opciones = userService.findNavOptionsByUserId(principal.getIdUser());
+
         JwtResponseDto jwtData = new JwtResponseDto(
-                jwt, "Bearer", principal.getIdUser(), principal.getLogin(), principal.getFullName(), roles
+                jwt, "Bearer", principal.getIdUser(), principal.getLogin(), principal.getFullName(), roles, opciones
         );
 
         return ResponseEntity.ok(ApiResponseDto.<JwtResponseDto>builder()

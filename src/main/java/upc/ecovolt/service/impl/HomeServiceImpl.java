@@ -48,6 +48,12 @@ public class HomeServiceImpl implements HomeService {
     }
 
     @Override
+    public List<HomeDto.Response> consultaHomeDinamica(Long idUser, String alias, String city, int idTipo) {
+        var lista = homeRepository.consultaDinamica(idUser, "%" + alias.toLowerCase() + "%", city, idTipo);
+        return homeMapper.toResponseDtoList(lista);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<HomeDto.Response> findAllHomes() {
         return homeMapper.toResponseDtoList(homeRepository.findAll());

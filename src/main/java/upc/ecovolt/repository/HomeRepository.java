@@ -9,6 +9,14 @@ import upc.ecovolt.entity.Home;
 
 public interface HomeRepository extends JpaRepository<Home, Long> {
 
+    @Query("select h from Home h where " +
+            "h.user.idUser = ?1 and " +
+            "LOWER(h.alias) like ?2 and " +
+            "(?3 = '' or h.city = ?3) and " +
+            "(?4 = -1 or h.propertyType.idDataCatalog = ?4) and " +
+            "h.status = 1")
+    List<Home> consultaDinamica(Long idUser, String alias, String city, int idTipo);
+
     /*
      * REGLA DE NEGOCIO: Seguridad y Propiedad de Datos.
      * Carga el selector de casas en el Dashboard del usuario logueado.

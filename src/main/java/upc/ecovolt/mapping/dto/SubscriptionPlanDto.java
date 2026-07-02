@@ -9,7 +9,7 @@ public class SubscriptionPlanDto {
         private String name;
         private String description;
         private BigDecimal price;
-        private Integer durationDays; // Duración del plan
+        private Integer durationDays;
     }
 
     @Data
@@ -17,9 +17,9 @@ public class SubscriptionPlanDto {
         private Integer idPlan;
         private String name;
         private String description;
-        private BigDecimal monthlyPrice; // Ojo aquí: monthlyPrice
-        private Integer deviceLimit;    // Ojo aquí: deviceLimit
-        private String billingCycle;    // Ojo aquí: billingCycle
+        private BigDecimal monthlyPrice;
+        private Integer deviceLimit;
+        private String billingCycle;
         private Integer status;
     }
 }

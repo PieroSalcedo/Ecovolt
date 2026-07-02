@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface HomeService {
 
+    List<HomeDto.Response> consultaHomeDinamica(Long idUser, String alias, String city, int idTipo);
+
     List<HomeDto.Response> findAllHomes();
 
     List<HomeDto.Response> findByPropertyTypeName(String propertyTypeDescription);

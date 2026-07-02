@@ -24,6 +24,18 @@ public class HomeController {
 
     private final HomeService homeService;
 
+    @GetMapping("/consultaDinamica")
+    public ResponseEntity<ApiResponseDto<List<HomeDto.Response>>> consulta(
+            @RequestParam(defaultValue = "") String alias,
+            @RequestParam(defaultValue = "") String city,
+            @RequestParam(defaultValue = "-1") int idTipo) {
+
+        var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        var data = homeService.consultaHomeDinamica(principal.getIdUser(), alias, city, idTipo);
+
+        return WebUtil.ok(data, "Resultados encontrados");
+    }
+
     // --- REGISTRO ---
     @PostMapping
     @Operation(summary = "Registrar vivienda", description = "Si es Customer, se ignora el idUser y se asigna el suyo.")

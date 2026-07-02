@@ -14,8 +14,8 @@ public class OptionDto {
     public static class Response {
         private Long idOption;
         private String name;
-        private String description;
-        private String url;
+        private String route;
+        private Integer type;
         private Integer status;
     }
 }
