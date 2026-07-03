@@ -7,6 +7,8 @@ import java.util.Optional;
 
 public interface DeviceService {
 
+    List<DeviceDto.Response> consultaDispositivoDinamica(Long idHome, Long idRoom, String name);
+
     List<DeviceDto.Response> findAllDevices();
 
     List<DeviceDto.Response> findByManufacturer(String manufacturer);

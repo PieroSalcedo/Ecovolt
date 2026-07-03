@@ -46,6 +46,13 @@ public class RoomServiceImpl implements RoomService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<RoomDto.Response> consultaCuartoDinamica(Long idHome, String name, int idTipo) {
+        List<Room> lista = roomRepository.consultaCuartoDinamica(idHome, name, idTipo);
+        return roomMapper.toResponseDtoList(lista);
+    }
+
     /**
      * CIBERSEGURIDAD: Valida propiedad sobre un ambiente específico.
      */

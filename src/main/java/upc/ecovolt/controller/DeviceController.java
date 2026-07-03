@@ -22,6 +22,17 @@ public class DeviceController {
 
     private final DeviceService deviceService;
 
+    @GetMapping("/consultaDinamica")
+    @Operation(summary = "Consulta dinámica de dispositivos")
+    public ResponseEntity<ApiResponseDto<List<DeviceDto.Response>>> consulta(
+            @RequestParam(name = "idHome", defaultValue = "-1") Long idHome,
+            @RequestParam(name = "idRoom", defaultValue = "-1") Long idRoom,
+            @RequestParam(name = "name", defaultValue = "") String name) {
+
+        var lista = deviceService.consultaDispositivoDinamica(idHome, idRoom, name);
+        return WebUtil.ok(lista, "Dispositivos cargados con éxito");
+    }
+
     // --- REGISTRO ---
     @PostMapping
     @Operation(summary = "Vincular dispositivo", description = "Valida límites de plan y propiedad del cuarto")

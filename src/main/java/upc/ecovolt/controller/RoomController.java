@@ -22,6 +22,17 @@ public class RoomController {
 
     private final RoomService roomService;
 
+    @GetMapping("/consultaDinamica")
+    public ResponseEntity<ApiResponseDto<List<RoomDto.Response>>> consulta(
+            @RequestParam(name = "name", defaultValue = "") String name,
+            @RequestParam(name = "idHome", defaultValue = "-1") Long idHome,
+            @RequestParam(name = "idTipo", defaultValue = "-1") int idTipo) {
+
+        // Llamamos al service (que ya tenemos implementado)
+        var lista = roomService.consultaCuartoDinamica(idHome, name, idTipo);
+        return WebUtil.ok(lista, "Ambientes cargados con éxito");
+    }
+
     // --- REGISTRO ---
     @PostMapping
     @Operation(summary = "Registrar habitación", description = "Crea un ambiente vinculado a una vivienda (Ej: Cocina, Dormitorio)")

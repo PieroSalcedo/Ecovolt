@@ -6,10 +6,20 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import upc.ecovolt.entity.Room;
 
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
+    @Query("select r from Room r where " +
+            "(:idHome = -1 or r.home.idHome = :idHome) and " +
+            "LOWER(r.name) LIKE LOWER(CONCAT('%', :name, '%')) and " +
+            "(:idTipo = -1 or r.roomType.idDataCatalog = :idTipo) and " +
+            "r.status = 1")
+    List<Room> consultaCuartoDinamica(
+            @Param("idHome") Long idHome,
+            @Param("name") String name,
+            @Param("idTipo") int idTipo);
     /*
      * REGLA DE NEGOCIO: Integridad de Estructura.
      * Lista todas las habitaciones activas de una propiedad.

@@ -285,6 +285,25 @@ SELECT
     1
 FROM public.device;
 
-select * from users u
+------ NUEVO INSERT - Registro y Consulta de Cuartos
+-- 1. Insertamos las nuevas opciones para Cuartos
+-- Tipo 1 = Registros | Tipo 2 = Consultas
+INSERT INTO public."option" ("name", route, "type", status) VALUES
+('Registrar Cuarto', 'cuarto/registro', 1, 1),
+('Consultar Cuartos', 'cuarto/mantenimiento', 2, 1);
 
-select * from home h
+-- 2. Obtenemos los IDs de las opciones que acabamos de insertar
+-- (Suponiendo que son el 3 y 4, pero lo hacemos dinámico por seguridad)
+INSERT INTO public.rol_has_option (id_role, id_option)
+SELECT 1, id_option FROM public."option" WHERE route IN ('cuarto/registro', 'cuarto/mantenimiento');
+
+------ NUEVO INSERT - Registro y Consulta de Dispositivos
+-- 1. Insertamos las nuevas opciones para Dispositivos IoT
+-- Tipo 1 = Registros | Tipo 2 = Consultas
+INSERT INTO public."option" ("name", route, "type", status) VALUES
+('Registrar Dispositivo', 'dispositivo/registro', 1, 1),
+('Consultar Dispositivos', 'dispositivo/mantenimiento', 2, 1);
+
+-- 2. Asignamos los accesos al Rol correspondiente de forma dinámica por su ruta
+INSERT INTO public.rol_has_option (id_role, id_option)
+SELECT 1, id_option FROM public."option" WHERE route IN ('dispositivo/registro', 'dispositivo/mantenimiento');

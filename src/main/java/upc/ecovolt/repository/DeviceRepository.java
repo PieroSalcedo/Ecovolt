@@ -3,9 +3,21 @@ package upc.ecovolt.repository;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import upc.ecovolt.entity.Device;
 
 public interface DeviceRepository extends JpaRepository<Device, Long> {
+
+    @Query("select d from Device d where " +
+            "(:idHome = -1 or d.room.home.idHome = :idHome) and " +
+            "(:idRoom = -1 or d.room.idRoom = :idRoom) and " +
+            "LOWER(d.name) LIKE LOWER(CONCAT('%', :name, '%')) and " +
+            "d.status = 1")
+    List<Device> consultaDispositivoDinamica(
+            @Param("idHome") Long idHome,
+            @Param("idRoom") Long idRoom,
+            @Param("name") String name);
 
     /*
      * REGLA DE NEGOCIO: Identificación Única de Hardware.

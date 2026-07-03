@@ -7,6 +7,8 @@ import java.util.Optional;
 
 public interface RoomService {
 
+    List<RoomDto.Response> consultaCuartoDinamica(Long idHome, String name, int idTipo);
+
     List<RoomDto.Response> findAllRooms();
 
     List<RoomDto.Response> findByRoomTypeName(String typeDescription);

@@ -45,6 +45,13 @@ public class DeviceServiceImpl implements DeviceService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<DeviceDto.Response> consultaDispositivoDinamica(Long idHome, Long idRoom, String name) {
+        List<Device> lista = deviceRepository.consultaDispositivoDinamica(idHome, idRoom, name);
+        return deviceMapper.toResponseDtoList(lista);
+    }
+
     /**
      * CIBERSEGURIDAD: Valida propiedad sobre un dispositivo.
      */
@@ -77,15 +84,12 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     @Transactional
     public DeviceDto.Response saveDevice(DeviceDto.Request requestDto) {
-        // 1. CIBERSEGURIDAD: Validar propiedad del ambiente
         validateRoomOwnership(requestDto.getIdRoom());
 
         Room room = roomRepository.findById(requestDto.getIdRoom())
                 .orElseThrow(() -> new RuntimeException("Habitación no encontrada"));
 
         var user = room.getHome().getUser();
-
-        // 2. REGLA DE NEGOCIO SaaS: Validar límite del Plan de Suscripción
         int planLimit = user.getSubscriptionPlan().getDeviceLimit();
         long currentDevices = deviceRepository.countByRoom_Home_User_IdUserAndStatus(user.getIdUser(), 1);
 
@@ -93,14 +97,19 @@ public class DeviceServiceImpl implements DeviceService {
             throw new RuntimeException("Límite de dispositivos alcanzado para el plan " + user.getSubscriptionPlan().getName());
         }
 
-        // 3. REGLA TÉCNICA: Serial Único (Llave natural IoT)
-        // Nota: En el DTO Request no tienes serialNumber, pero en la Entidad sí.
-        // Si el sensor lo envía, deberías agregarlo al RequestDto.
-        // Por ahora asumo que viene en el requestDto si lo agregas.
-
         Device entity = deviceMapper.toEntity(requestDto);
         entity.setRoom(room);
+        entity.setFirmwareVersion("V1.0.0-Ecovolt");
         entity.setStatus(1);
+
+        // --- ASIGNACIÓN CORRECTA DE CATEGORÍA ---
+        if (requestDto.getIdCategory() != null && requestDto.getIdCategory() > 0) {
+            upc.ecovolt.entity.DataCatalog category = new upc.ecovolt.entity.DataCatalog();
+            category.setIdDataCatalog(requestDto.getIdCategory());
+            entity.setCategory(category); // Hibernate ahora sabe que es una entidad existente por su ID
+        } else {
+            entity.setCategory(null);
+        }
 
         return deviceMapper.toResponseDto(deviceRepository.save(entity));
     }
