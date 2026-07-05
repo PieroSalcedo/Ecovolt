@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import upc.ecovolt.entity.DataCatalog;
 import upc.ecovolt.entity.Device;
 import upc.ecovolt.entity.Room;
 import upc.ecovolt.mapping.dto.DeviceDto;
@@ -122,11 +123,18 @@ public class DeviceServiceImpl implements DeviceService {
 
         return deviceRepository.findById(idDevice).map(existing -> {
             existing.setName(requestDto.getName());
+            existing.setManufacturer(requestDto.getBrand());
             // Si el DTO tuviera manufacturer o firmware, se actualizarían aquí
 
             if (requestDto.getIdRoom() != null) {
                 Room newRoom = roomRepository.findById(requestDto.getIdRoom()).get();
                 existing.setRoom(newRoom);
+            }
+
+            if (requestDto.getIdCategory() != null && requestDto.getIdCategory() > 0) {
+                DataCatalog category = new DataCatalog();
+                category.setIdDataCatalog(requestDto.getIdCategory());
+                existing.setCategory(category);
             }
 
             return deviceMapper.toResponseDto(deviceRepository.save(existing));
