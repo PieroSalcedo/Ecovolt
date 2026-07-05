@@ -57,6 +57,24 @@ public class EnergyReadingController {
         return ResponseEntity.ok(lista);
     }
 
+    @GetMapping("/total/home/{id}")
+    public ResponseEntity<ApiResponseDto<BigDecimal>> getConsumoCasa(@PathVariable Long id) {
+        BigDecimal total = readingService.sumTotalHome(id);
+        return WebUtil.ok(total, "Consumo total de la vivienda calculado");
+    }
+
+    @GetMapping("/total/room/{id}")
+    public ResponseEntity<ApiResponseDto<BigDecimal>> getConsumoCuarto(@PathVariable Long id) {
+        BigDecimal total = readingService.sumTotalRoom(id);
+        return WebUtil.ok(total, "Consumo total del ambiente calculado");
+    }
+
+    @GetMapping("/total/device/{id}")
+    public ResponseEntity<ApiResponseDto<BigDecimal>> getConsumoDispositivo(@PathVariable Long id) {
+        BigDecimal total = readingService.sumTotalDevice(id);
+        return WebUtil.ok(total, "Consumo total del dispositivo calculado");
+    }
+
     @GetMapping("/device/{idDevice}/abnormal")
     public ResponseEntity<ApiResponseDto<List<EnergyReadingDto.Response>>> detectarConsumoAnormal(
             @PathVariable("idDevice") Long idDevice,

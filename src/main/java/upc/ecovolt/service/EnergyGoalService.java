@@ -9,6 +9,8 @@ public interface EnergyGoalService {
 
     List<EnergyGoalDto.Response> findAll();
 
+    EnergyGoalDto.Response findActiveByTypeAndId(String type, Long id);
+
     List<EnergyGoalDto.Response> findCriticalGoals(Integer threshold);
 
     Optional<EnergyGoalDto.Response> findById(Integer idGoal);

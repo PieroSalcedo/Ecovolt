@@ -8,11 +8,13 @@ import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.DataCatalog;
 import upc.ecovolt.entity.Device;
 import upc.ecovolt.entity.Room;
+import upc.ecovolt.entity.User;
 import upc.ecovolt.mapping.dto.DeviceDto;
 import upc.ecovolt.mapping.dto.DeviceMapper;
 import upc.ecovolt.repository.DataCatalogRepository;
 import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.RoomRepository;
+import upc.ecovolt.repository.UserRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.DeviceService;
 
@@ -28,6 +30,7 @@ public class DeviceServiceImpl implements DeviceService {
     private final RoomRepository roomRepository;
     private final DataCatalogRepository dataCatalogRepository;
     private final DeviceMapper deviceMapper;
+    private final UserRepository userRepository;
 
     /**
      * CIBERSEGURIDAD: Valida si el ambiente pertenece al usuario logueado.
@@ -83,6 +86,11 @@ public class DeviceServiceImpl implements DeviceService {
     }
 
     @Override
+    public long countActiveDevicesByUser(Long idUser) {
+        return deviceRepository.countActiveDevicesByUser(idUser);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Optional<DeviceDto.Response> findDeviceById(Long idDevice) {
         validateDeviceOwnership(idDevice);
@@ -92,34 +100,34 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     @Transactional
     public DeviceDto.Response saveDevice(DeviceDto.Request requestDto) {
-        validateRoomOwnership(requestDto.getIdRoom());
+        // 1. Obtener el ID del usuario logueado desde el Token
+        UsuarioPrincipal principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long idLogueado = principal.getIdUser();
 
-        Room room = roomRepository.findById(requestDto.getIdRoom())
-                .orElseThrow(() -> new RuntimeException("Habitación no encontrada"));
+        // 2. Traer el usuario de la BD para ver su Plan y su Límite
+        User usuario = userRepository.findById(idLogueado)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        var user = room.getHome().getUser();
-        int planLimit = user.getSubscriptionPlan().getDeviceLimit();
-        long currentDevices = deviceRepository.countByRoom_Home_User_IdUserAndStatus(user.getIdUser(), 1);
+        // 3. Obtener el límite del plan (ej. 5) y cuántos tiene registrados (ej. 4)
+        int limitePermitido = usuario.getSubscriptionPlan().getDeviceLimit();
+        long dispositivosActuales = deviceRepository.countActiveDevicesByUser(idLogueado);
 
-        if (currentDevices >= planLimit) {
-            throw new RuntimeException("Límite de dispositivos alcanzado para el plan " + user.getSubscriptionPlan().getName());
+        log.info("Validando Plan: Usuario {} tiene {} de {} dispositivos permitidos",
+                usuario.getLogin(), dispositivosActuales, limitePermitido);
+
+        // 4. REGLA DE ORO: Si ya llegó al límite, lanzamos excepción
+        if (dispositivosActuales >= limitePermitido) {
+            throw new RuntimeException("Límite de dispositivos alcanzado. Tu plan '" +
+                    usuario.getSubscriptionPlan().getName() + "' solo permite " +
+                    limitePermitido + " equipos.");
         }
 
+        // 5. Si todo está bien, guardamos el dispositivo normalmente
         Device entity = deviceMapper.toEntity(requestDto);
-        entity.setRoom(room);
-        entity.setFirmwareVersion("V1.0.0-Ecovolt");
-        entity.setStatus(1);
+        entity.setStatus(1); // Activo
 
-        // --- ASIGNACIÓN CORRECTA DE CATEGORÍA ---
-        if (requestDto.getIdCategory() != null && requestDto.getIdCategory() > 0) {
-            upc.ecovolt.entity.DataCatalog category = new upc.ecovolt.entity.DataCatalog();
-            category.setIdDataCatalog(requestDto.getIdCategory());
-            entity.setCategory(category); // Hibernate ahora sabe que es una entidad existente por su ID
-        } else {
-            entity.setCategory(null);
-        }
-
-        return deviceMapper.toResponseDto(deviceRepository.save(entity));
+        Device saved = deviceRepository.save(entity);
+        return deviceMapper.toResponseDto(saved);
     }
 
     @Override
@@ -196,4 +204,5 @@ public class DeviceServiceImpl implements DeviceService {
     public long countByUserIdAndStatus(Long idUser, Integer status) {
         return deviceRepository.countByRoom_Home_User_IdUserAndStatus(idUser, status);
     }
+
 }

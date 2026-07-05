@@ -11,11 +11,13 @@ public interface EnergyGoalMapper extends GenericMapper<EnergyGoal, EnergyGoalDt
     @Override
     @Mapping(target = "monthlyLimitKwh", source = "targetValue")
     @Mapping(target = "home.idHome", source = "idHome")
+    @Mapping(target = "room.idRoom", source = "idRoom")
+    @Mapping(target = "device.idDevice", source = "idDevice")
     EnergyGoal toEntity(EnergyGoalDto.Request requestDto);
 
     @Override
     @Mapping(target = "targetValue", source = "monthlyLimitKwh")
-    @Mapping(target = "idHome", source = "home.idHome")
-    @Mapping(target = "homeAddress", source = "home.address")
+    @Mapping(target = "targetName", expression = "java(entity.getHome() != null ? entity.getHome().getAlias() : (entity.getRoom() != null ? entity.getRoom().getName() : entity.getDevice().getName()))")
+    @Mapping(target = "type", expression = "java(entity.getHome() != null ? \"CASA\" : (entity.getRoom() != null ? \"CUARTO\" : \"DISPOSITIVO\"))")
     EnergyGoalDto.Response toResponseDto(EnergyGoal entity);
 }

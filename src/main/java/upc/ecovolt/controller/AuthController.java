@@ -21,6 +21,7 @@ import upc.ecovolt.security.JwtProvider;
 import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.UserService;
 import upc.ecovolt.util.AppSettings;
+import upc.ecovolt.util.WebUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -68,18 +69,11 @@ public class AuthController {
                 .build());
     }
 
-    @Operation(summary = "Registrar nuevo usuario", description = "Crea una cuenta de cliente con plan básico por defecto.")
+    @Operation(summary = "Registrar nuevo cliente")
     @PostMapping("/register")
-    public ResponseEntity<ApiResponseDto<UserDto.Response>> register(@Valid @RequestBody UserDto.Request requestDto) {
-        log.info("REGISTRO: Creando nueva cuenta para '{}'", requestDto.getName());
-
-        var newUser = userService.saveUser(requestDto);
-
-        return new ResponseEntity<>(ApiResponseDto.<UserDto.Response>builder()
-                .title("¡Cuenta Creada!")
-                .message("Hola " + newUser.getName() + ", tu cuenta ha sido registrada. Ahora puedes iniciar sesión.")
-                .status("SUCCESS")
-                .data(newUser)
-                .build(), HttpStatus.CREATED);
+    public ResponseEntity<ApiResponseDto<UserDto.Response>> register(@RequestBody UserDto.Request request) {
+        // Llama al service que encripta la clave y asigna el Plan ID 1
+        var newUser = userService.saveUser(request);
+        return WebUtil.created(newUser, "¡Cuenta creada con éxito! Ya puedes iniciar sesión.");
     }
 }

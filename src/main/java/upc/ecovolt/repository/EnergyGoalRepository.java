@@ -1,7 +1,10 @@
 package upc.ecovolt.repository;
 
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import upc.ecovolt.entity.EnergyGoal;
 
 public interface EnergyGoalRepository extends JpaRepository<EnergyGoal, Integer> {
@@ -32,4 +35,16 @@ public interface EnergyGoalRepository extends JpaRepository<EnergyGoal, Integer>
      * Verifica si una casa ya tiene una meta con un límite mensual muy bajo.
      */
     boolean existsByHome_IdHomeAndStatus(Long idHome, Integer status);
+
+    // Buscar meta activa por Vivienda
+    @Query("select g from EnergyGoal g where g.home.idHome = ?1 and g.status = 1")
+    Optional<EnergyGoal> findActiveByHome(Long idHome);
+
+    // Buscar meta activa por Cuarto
+    @Query("select g from EnergyGoal g where g.room.idRoom = ?1 and g.status = 1")
+    Optional<EnergyGoal> findActiveByRoom(Long idRoom);
+
+    // Buscar meta activa por Dispositivo
+    @Query("select g from EnergyGoal g where g.device.idDevice = ?1 and g.status = 1")
+    Optional<EnergyGoal> findActiveByDevice(Long idDevice);
 }

@@ -38,6 +38,15 @@ public interface EnergyReadingRepository extends JpaRepository<EnergyReading, Lo
             "GROUP BY d.name")
     List<ReporteDispositivoDTO> reporteConsumoPorDispositivo(Long idRoom);
 
+    @Query("select sum(er.wattage) from EnergyReading er where er.device.room.home.idHome = ?1 and er.status = 1")
+    Optional<BigDecimal> sumTotalHome(Long idHome);
+
+    @Query("select sum(er.wattage) from EnergyReading er where er.device.room.idRoom = ?1 and er.status = 1")
+    Optional<BigDecimal> sumTotalRoom(Long idRoom);
+
+    @Query("select sum(er.wattage) from EnergyReading er where er.device.idDevice = ?1 and er.status = 1")
+    Optional<BigDecimal> sumTotalDevice(Long idDevice);
+
     /*
      * REGLA DE NEGOCIO: Cálculo de Consumo Acumulado por Dispositivo.
      * Retorna Optional para manejar casos donde no hay lecturas en el rango.

@@ -20,6 +20,12 @@ public interface EnergyReadingService {
 
     List<ReporteDispositivoDTO> reporteConsumoPorDispositivo(Long idRoom);
 
+    BigDecimal sumTotalHome(Long idHome);
+
+    BigDecimal sumTotalRoom(Long idRoom);
+
+    BigDecimal sumTotalDevice(Long idDevice);
+
     void delete(Long idReading);
 
     Optional<EnergyReadingDto.Response> findReadingById(Long idReading);

@@ -79,6 +79,25 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public BigDecimal sumTotalHome(Long idHome) {
+        // Si el repo devuelve vacío, orElse pone 0.00
+        return readingRepository.sumTotalHome(idHome).orElse(BigDecimal.ZERO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal sumTotalRoom(Long idRoom) {
+        return readingRepository.sumTotalRoom(idRoom).orElse(BigDecimal.ZERO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal sumTotalDevice(Long idDevice) {
+        return readingRepository.sumTotalDevice(idDevice).orElse(BigDecimal.ZERO);
+    }
+
+    @Override
     @Transactional
     public EnergyReadingDto.Response saveReading(EnergyReadingDto.Request requestDto) {
         // CIBERSEGURIDAD: Solo el dueño del dispositivo puede inyectar lecturas

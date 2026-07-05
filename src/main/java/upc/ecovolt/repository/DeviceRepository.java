@@ -22,6 +22,9 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     @Query("select d from Device d where d.room.home.user.idUser = ?1 and d.status = 1")
     List<Device> findByUserId(Long idUser);
 
+    @Query("select count(d) from Device d where d.room.home.user.idUser = ?1 and d.status = 1")
+    long countActiveDevicesByUser(Long idUser);
+
     /*
      * REGLA DE NEGOCIO: Identificación Única de Hardware.
      * Busca un dispositivo por su número de serie (MAC/UUID).

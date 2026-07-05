@@ -13,6 +13,8 @@ public interface DeviceService {
 
     List<DeviceDto.Response> findAllDevices();
 
+    long countActiveDevicesByUser(Long idUser);
+
     List<DeviceDto.Response> findByManufacturer(String manufacturer);
 
     long countByUserIdAndStatus(Long idUser, Integer status);

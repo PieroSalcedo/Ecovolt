@@ -47,6 +47,25 @@ public class EnergyGoalServiceImpl implements EnergyGoalService {
 
     @Override
     @Transactional(readOnly = true)
+    public EnergyGoalDto.Response findActiveByTypeAndId(String type, Long id) {
+        Optional<EnergyGoal> goalOpt = Optional.empty();
+
+        // Lógica de decisión según el nivel
+        if ("CASA".equalsIgnoreCase(type)) {
+            goalOpt = goalRepository.findActiveByHome(id);
+        } else if ("CUARTO".equalsIgnoreCase(type)) {
+            goalOpt = goalRepository.findActiveByRoom(id);
+        } else if ("DISPOSITIVO".equalsIgnoreCase(type)) {
+            goalOpt = goalRepository.findActiveByDevice(id);
+        }
+
+        // Si existe la meta, la mapeamos a DTO. Si no, lanzamos error para que el Front sepa.
+        return goalOpt.map(goalMapper::toResponseDto)
+                .orElseThrow(() -> new RuntimeException("No se encontró una meta activa para este nivel."));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<EnergyGoalDto.Response> findAll() {
         return goalMapper.toResponseDtoList(goalRepository.findAll());
     }

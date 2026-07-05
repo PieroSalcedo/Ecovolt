@@ -46,4 +46,14 @@ public class EnergyGoalController {
         goalService.delete(id);
         return WebUtil.ok(null, "Meta de ahorro desactivada correctamente.");
     }
+
+    @GetMapping("/active-by-type")
+    public ResponseEntity<ApiResponseDto<EnergyGoalDto.Response>> obtenerMetaActiva(
+            @RequestParam(name = "type") String type,
+            @RequestParam(name = "id") Long id) {
+
+        // type vendrá como 'CASA', 'CUARTO' o 'DISPOSITIVO'
+        var meta = goalService.findActiveByTypeAndId(type, id);
+        return WebUtil.ok(meta, "Meta recuperada");
+    }
 }
