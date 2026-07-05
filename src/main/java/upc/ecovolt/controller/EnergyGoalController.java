@@ -10,8 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.ecovolt.mapping.dto.ApiResponseDto; // Importante
-import upc.ecovolt.mapping.dto.energygoaldto.EnergyGoalRequestDto;
-import upc.ecovolt.mapping.dto.energygoaldto.EnergyGoalResponseDto;
+import upc.ecovolt.mapping.dto.EnergyGoalDto;
 import upc.ecovolt.service.EnergyGoalService;
 import upc.ecovolt.util.AppSettings;
 
@@ -32,10 +31,10 @@ public class EnergyGoalController {
             description = "Define un límite mensual de kWh. El sistema validará que la vivienda pertenezca al usuario.")
     @ApiResponse(responseCode = "201", description = "Meta de ahorro creada")
     @PostMapping
-    public ResponseEntity<ApiResponseDto<EnergyGoalResponseDto>> create(@Valid @RequestBody EnergyGoalRequestDto request) {
+    public ResponseEntity<ApiResponseDto<EnergyGoalDto.Response>> create(@Valid @RequestBody EnergyGoalDto.Request request) {
         var data = goalService.save(request);
 
-        return new ResponseEntity<>(ApiResponseDto.<EnergyGoalResponseDto>builder()
+        return new ResponseEntity<>(ApiResponseDto.<EnergyGoalDto.Response>builder()
                 .title("¡Meta Establecida!")
                 .message("Has configurado un límite de " + data.getMonthlyLimitKwh() + " kWh para '" + data.getHomeAlias() + "'.")
                 .status("SUCCESS")
@@ -45,13 +44,13 @@ public class EnergyGoalController {
 
     @Operation(summary = "Actualizar presupuesto o alertas", description = "Permite modificar el límite de consumo o el umbral de aviso (%).")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<EnergyGoalResponseDto>> update(
+    public ResponseEntity<ApiResponseDto<EnergyGoalDto.Response>> update(
             @Parameter(description = "ID de la meta", example = "1") @PathVariable Integer id,
-            @Valid @RequestBody EnergyGoalRequestDto request) {
+            @Valid @RequestBody EnergyGoalDto.Request request) {
 
         var data = goalService.update(id, request);
 
-        return ResponseEntity.ok(ApiResponseDto.<EnergyGoalResponseDto>builder()
+        return ResponseEntity.ok(ApiResponseDto.<EnergyGoalDto.Response>builder()
                 .title("Presupuesto Actualizado")
                 .message("Los ajustes de ahorro se guardaron correctamente para esta vivienda.")
                 .status("SUCCESS")
@@ -77,7 +76,7 @@ public class EnergyGoalController {
 
     @Operation(summary = "Obtener meta por ID", description = "ACCESO POR PROPIEDAD: Detalles del presupuesto.")
     @GetMapping("/{id}")
-    public ResponseEntity<EnergyGoalResponseDto> getById(@PathVariable Integer id) {
+    public ResponseEntity<EnergyGoalDto.Response> getById(@PathVariable Integer id) {
         return goalService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -85,7 +84,7 @@ public class EnergyGoalController {
 
     @Operation(summary = "Listar metas por vivienda", description = "Obtiene los presupuestos activos para una propiedad específica.")
     @GetMapping("/home/{homeId}")
-    public ResponseEntity<List<EnergyGoalResponseDto>> getByHome(
+    public ResponseEntity<List<EnergyGoalDto.Response>> getByHome(
             @Parameter(description = "ID de la vivienda", example = "1") @PathVariable Long homeId) {
         return ResponseEntity.ok(goalService.findActiveGoalsByHome(homeId));
     }
@@ -93,14 +92,14 @@ public class EnergyGoalController {
     @Operation(summary = "Reporte de metas críticas (Admin/Analyst)",
             description = "RESTRICTED: Identifica hogares con alto riesgo de exceder su cuota energética.")
     @GetMapping("/critical")
-    public ResponseEntity<List<EnergyGoalResponseDto>> getCritical(
+    public ResponseEntity<List<EnergyGoalDto.Response>> getCritical(
             @Parameter(description = "Umbral de alerta mínimo (%)", example = "85") @RequestParam Integer threshold) {
         return ResponseEntity.ok(goalService.findCriticalGoals(threshold));
     }
 
     @Operation(summary = "Listar todas las metas (Auditoría)", description = "ADMIN/AUDITOR ONLY")
     @GetMapping
-    public ResponseEntity<List<EnergyGoalResponseDto>> getAll() {
+    public ResponseEntity<List<EnergyGoalDto.Response>> getAll() {
         return ResponseEntity.ok(goalService.findAll());
     }
 }

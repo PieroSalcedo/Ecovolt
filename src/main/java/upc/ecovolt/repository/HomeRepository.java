@@ -15,7 +15,7 @@ public interface HomeRepository extends JpaRepository<Home, Long> {
      * Lista las propiedades activas que pertenecen al usuario logueado.
      * Se usa para cargar el selector de casas en el Dashboard.
      */
-    @Query("select h from Home h where h.user.id = ?1 and h.status = 1")
+    @Query("select h from Home h where h.user.idUser = ?1 and h.status = 1")
     List<Home> findActiveHomesByUser(Long idUser);
 
     /*
@@ -39,14 +39,14 @@ public interface HomeRepository extends JpaRepository<Home, Long> {
      * Cuenta el total de dispositivos instalados en toda la casa navegando por:
      * Home -> Room -> Device.
      */
-    @Query("select count(d) from Device d where d.room.home.id = ?1")
+    @Query("select count(d) from Device d where d.room.home.idHome = ?1")
     long countTotalDevicesByHome(Long idHome);
 
     /*
      * REGLA DE NEGOCIO: Gestión Multi-propiedad.
      * Busca una propiedad específica por su alias (Ej: 'Oficina') para un usuario.
      */
-    @Query("select h from Home h where h.alias = ?1 and h.user.id = ?2")
+    @Query("select h from Home h where h.alias = ?1 and h.user.idUser = ?2")
     List<Home> findByAliasAndUserId(String alias, Long idUser);
 
     /*

@@ -23,9 +23,8 @@ public class UsuarioSeguridadServiceImpl implements UserDetailsService {
         User user = userRepository.findByLogin(login)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
-        // Usamos .getId() que es Long
-        List<Role> roles = userRepository.traerRolesDeUsuario(user.getId());
-        List<Option> opciones = userRepository.traerEnlacesDeUsuario(user.getId());
+        List<Role> roles = userRepository.traerRolesDeUsuario(user.getIdUser());
+        List<Option> opciones = userRepository.traerEnlacesDeUsuario(user.getIdUser());
 
         return UsuarioPrincipal.build(user, roles, opciones);
     }

@@ -31,7 +31,7 @@ public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPl
      * Cuenta cuántos usuarios reales están usando un plan para medir su rentabilidad.
      * Relación: User -> SubscriptionPlan.
      */
-    @Query("select count(u) from User u where u.subscriptionPlan.id = ?1 and u.status = 1")
+    @Query("select count(u) from User u where u.subscriptionPlan.idPlan = ?1 and u.status = 1")
     long countActiveUsersByPlan(Integer planId);
 
     /*
@@ -47,7 +47,7 @@ public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPl
      * Obtiene directamente el límite de dispositivos de un plan específico.
      * Optimiza el rendimiento al no traer toda la entidad.
      */
-    @Query("select p.deviceLimit from SubscriptionPlan p where p.id = ?1")
+    @Query("select p.deviceLimit from SubscriptionPlan p where p.idPlan = ?1")
     Integer getDeviceLimitById(Integer planId);
 
     /*

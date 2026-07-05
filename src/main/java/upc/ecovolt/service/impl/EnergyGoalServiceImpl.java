@@ -7,9 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.EnergyGoal;
 import upc.ecovolt.entity.Home;
-import upc.ecovolt.mapping.dto.energygoaldto.EnergyGoalMapper;
-import upc.ecovolt.mapping.dto.energygoaldto.EnergyGoalRequestDto;
-import upc.ecovolt.mapping.dto.energygoaldto.EnergyGoalResponseDto;
+import upc.ecovolt.mapping.dto.EnergyGoalDto;
+import upc.ecovolt.mapping.dto.EnergyGoalMapper;
 import upc.ecovolt.repository.EnergyGoalRepository;
 import upc.ecovolt.repository.HomeRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
@@ -37,7 +36,7 @@ public class EnergyGoalServiceImpl implements EnergyGoalService {
         if (!isAdmin) {
             Home home = homeRepository.findById(homeId)
                     .orElseThrow(() -> new RuntimeException("Error: Propiedad no encontrada."));
-            if (!home.getUser().getId().equals(principal.getIdUser())) {
+            if (!home.getUser().getIdUser().equals(principal.getIdUser())) {
                 log.error("FRAUDE DETECTADO: El usuario {} intentó manipular metas de la casa ID: {}",
                         principal.getLogin(), homeId);
                 throw new RuntimeException("Acceso Denegado: No tienes permisos sobre esta vivienda.");
@@ -47,22 +46,22 @@ public class EnergyGoalServiceImpl implements EnergyGoalService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnergyGoalResponseDto> findAll() {
+    public List<EnergyGoalDto.Response> findAll() {
         return goalMapper.toResponseDtoList(goalRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<EnergyGoalResponseDto> findById(Integer id) {
+    public Optional<EnergyGoalDto.Response> findById(Integer id) {
         var goal = goalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Meta no encontrada"));
-        validateHomeOwnership(goal.getHome().getId());
+        validateHomeOwnership(goal.getHome().getIdHome());
         return Optional.of(goalMapper.toResponseDto(goal));
     }
 
     @Override
     @Transactional
-    public EnergyGoalResponseDto save(EnergyGoalRequestDto requestDto) {
+    public EnergyGoalDto.Response save(EnergyGoalDto.Request requestDto) {
         // CIBERSEGURIDAD: ¿La casa donde quieres poner la meta es tuya?
         validateHomeOwnership(requestDto.getHomeId());
 
@@ -72,22 +71,22 @@ public class EnergyGoalServiceImpl implements EnergyGoalService {
 
         EnergyGoal entity = goalMapper.toEntity(requestDto);
         entity.setHome(home);
-        entity.setUsuarioRegistro(home.getUser().getLogin());
+        entity.setCreatedBy(home.getUser().getLogin());
 
         return goalMapper.toResponseDto(goalRepository.save(entity));
     }
 
     @Override
     @Transactional
-    public EnergyGoalResponseDto update(Integer id, EnergyGoalRequestDto requestDto) {
+    public EnergyGoalDto.Response update(Integer id, EnergyGoalDto.Request requestDto) {
         EnergyGoal existing = goalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Meta no encontrada"));
 
-        validateHomeOwnership(existing.getHome().getId());
+        validateHomeOwnership(existing.getHome().getIdHome());
 
         existing.setMonthlyLimitKwh(requestDto.getMonthlyLimitKwh());
         existing.setAlertThresholdPercentage(requestDto.getAlertThresholdPercentage());
-        existing.setUsuarioActualizacion(SecurityContextHolder.getContext().getAuthentication().getName());
+        existing.setUpdatedBy(SecurityContextHolder.getContext().getAuthentication().getName());
 
         return goalMapper.toResponseDto(goalRepository.save(existing));
     }
@@ -97,20 +96,20 @@ public class EnergyGoalServiceImpl implements EnergyGoalService {
     public void delete(Integer id) {
         EnergyGoal existing = goalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Meta no encontrada"));
-        validateHomeOwnership(existing.getHome().getId());
+        validateHomeOwnership(existing.getHome().getIdHome());
         goalRepository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnergyGoalResponseDto> findActiveGoalsByHome(Long idHome) {
+    public List<EnergyGoalDto.Response> findActiveGoalsByHome(Long idHome) {
         validateHomeOwnership(idHome);
         return goalMapper.toResponseDtoList(goalRepository.findActiveGoalsByHome(idHome));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnergyGoalResponseDto> findCriticalGoals(Integer threshold) {
+    public List<EnergyGoalDto.Response> findCriticalGoals(Integer threshold) {
         // REGLA DE NEGOCIO: Reporte para el Staff (DEVIDA)
         // Permite identificar qué sectores están en riesgo de superar sus cuotas
         return goalMapper.toResponseDtoList(goalRepository.findCriticalGoals(threshold));

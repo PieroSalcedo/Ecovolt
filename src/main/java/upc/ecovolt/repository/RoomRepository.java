@@ -14,7 +14,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
      * REGLA DE NEGOCIO: Integridad de Estructura.
      * Lista todas las habitaciones activas de una propiedad específica.
      */
-    @Query("select r from Room r where r.home.id = ?1 and r.status = 1")
+    @Query("select r from Room r where r.home.idHome = ?1 and r.status = 1")
     List<Room> findByHomeId(Long idHome);
 
     /*
@@ -38,20 +38,20 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
      * Cuenta cuántos dispositivos IoT están instalados en una habitación específica.
      * Cruce: Device -> Room.
      */
-    @Query("select count(d) from Device d where d.room.id = ?1")
+    @Query("select count(d) from Device d where d.room.idRoom = ?1")
     long countDevicesInRoom(Long idRoom);
 
     /*
      * REGLA DE NEGOCIO: Ubicación Vertical.
      * Lista habitaciones en un piso específico (Ej: Piso 2).
      */
-    @Query("select r from Room r where r.home.id = ?1 and r.floorNumber = ?2")
+    @Query("select r from Room r where r.home.idHome = ?1 and r.floorNumber = ?2")
     List<Room> findByHomeAndFloor(Long idHome, Integer floor);
 
     /*
      * REGLA DE NEGOCIO: Búsqueda por Nombre.
      * Busca una habitación específica por su nombre dentro de una casa.
      */
-    @Query("select r from Room r where r.name = ?1 and r.home.id = ?2")
+    @Query("select r from Room r where r.name = ?1 and r.home.idHome = ?2")
     List<Room> findByNameAndHome(String name, Long idHome);
 }

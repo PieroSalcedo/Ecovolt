@@ -11,8 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.ecovolt.mapping.dto.ApiResponseDto;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingRequestDto;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingResponseDto;
+import upc.ecovolt.mapping.dto.EnergyReadingDto;
 import upc.ecovolt.service.EnergyReadingService;
 import upc.ecovolt.util.AppSettings;
 
@@ -35,10 +34,10 @@ public class EnergyReadingController {
             description = "Recibe datos de potencia y voltaje. Valida que el sensor pertenezca al usuario.")
     @ApiResponse(responseCode = "201", description = "Lectura procesada exitosamente")
     @PostMapping
-    public ResponseEntity<ApiResponseDto<EnergyReadingResponseDto>> create(@Valid @RequestBody EnergyReadingRequestDto request) {
+    public ResponseEntity<ApiResponseDto<EnergyReadingDto.Response>> create(@Valid @RequestBody EnergyReadingDto.Request request) {
         var data = readingService.saveReading(request);
 
-        return new ResponseEntity<>(ApiResponseDto.<EnergyReadingResponseDto>builder()
+        return new ResponseEntity<>(ApiResponseDto.<EnergyReadingDto.Response>builder()
                 .title("Telemetría Recibida")
                 .message("Datos del dispositivo registrados correctamente a las " + data.getCreatedAt().toLocalTime())
                 .status("SUCCESS")
@@ -76,7 +75,7 @@ public class EnergyReadingController {
     @Operation(summary = "Detección de consumos fantasma",
             description = "Filtra lecturas que superan un umbral de ruido. Ayuda a identificar fugas eléctricas.")
     @GetMapping("/device/{idDevice}/abnormal")
-    public ResponseEntity<List<EnergyReadingResponseDto>> getAbnormal(
+    public ResponseEntity<List<EnergyReadingDto.Response>> getAbnormal(
             @Parameter(description = "ID del sensor", example = "1") @PathVariable Long idDevice,
             @Parameter(description = "Umbral de wattage (Watts)", example = "5.0") @RequestParam BigDecimal threshold) {
         return ResponseEntity.ok(readingService.findAbnormalConsumption(idDevice, threshold));
@@ -84,7 +83,7 @@ public class EnergyReadingController {
 
     @Operation(summary = "Monitor en tiempo real", description = "Últimas lecturas para velocímetros o indicadores en vivo.")
     @GetMapping("/device/{idDevice}/latest")
-    public ResponseEntity<List<EnergyReadingResponseDto>> getLatest(@PathVariable Long idDevice) {
+    public ResponseEntity<List<EnergyReadingDto.Response>> getLatest(@PathVariable Long idDevice) {
         return ResponseEntity.ok(readingService.findLatestReadingsByDevice(idDevice));
     }
 
@@ -96,7 +95,7 @@ public class EnergyReadingController {
 
     @Operation(summary = "Historial Completo (Staff)", description = "AUDITOR ONLY: Lista todas las lecturas del sistema.")
     @GetMapping
-    public ResponseEntity<List<EnergyReadingResponseDto>> getAll() {
+    public ResponseEntity<List<EnergyReadingDto.Response>> getAll() {
         return ResponseEntity.ok(readingService.findAllReadings());
     }
 }
