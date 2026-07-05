@@ -307,3 +307,56 @@ INSERT INTO public."option" ("name", route, "type", status) VALUES
 -- 2. Asignamos los accesos al Rol correspondiente de forma dinámica por su ruta
 INSERT INTO public.rol_has_option (id_role, id_option)
 SELECT 1, id_option FROM public."option" WHERE route IN ('dispositivo/registro', 'dispositivo/mantenimiento');
+
+---------------------------
+-- 1. Insertamos las nuevas opciones de energía
+-- Tipo 1 = Registros (Formularios)
+-- Tipo 2 = Consultas (Dashboards/Tablas)
+
+INSERT INTO public."option" ("name", route, "type", status) VALUES
+('Establecer Meta', 'energia/meta', 1, 1),
+('Monitor de Ahorro', 'energia/dashboard', 2, 1);
+
+-- 2. Vinculamos estas opciones al Rol de Alonso (ROLE_CUSTOMER tiene ID 1)
+-- Lo hacemos con un SELECT para no fallar con los IDs
+INSERT INTO public.rol_has_option (id_role, id_option)
+SELECT 1, id_option FROM public."option"
+WHERE route IN ('energia/meta', 'energia/dashboard');
+
+
+----------------------------------
+-----------------------------------
+
+-- 1. Buscamos los dispositivos que pertenecen a la Casa 22
+-- 2. Insertamos lecturas de consumo (wattage) para esos dispositivos
+INSERT INTO public.energy_reading (wattage, voltage, id_device, reading_at, status)
+SELECT
+    (random() * 5) + 1, -- Watts aleatorios entre 1 y 6
+    220,               -- Voltaje estándar
+    d.id_device,
+    NOW(),             -- Fecha de hoy (importante para el filtro del monitor)
+    1
+FROM public.device d
+JOIN public.room r ON d.id_room = r.id_room
+WHERE r.id_home = 22; -- ID de Casa Keith
+
+----------------------------------
+----------------------------------
+
+INSERT INTO public."option" ("name", route, "type", status) VALUES
+('Simulador IoT', 'energia/simulador', 1, 1);
+
+-- Asignar a Alonso (Rol 1)
+INSERT INTO public.rol_has_option (id_role, id_option)
+SELECT 1, id_option FROM public."option" WHERE route = 'energia/simulador';
+
+----------------------------------
+-----------------------------------
+INSERT INTO public."option" ("name", route, "type", status) VALUES
+('Dashboard de Consumo', 'reporte/consumo', 2, 1);
+
+-- Asignar a Alonso (Rol de Customer ID 1)
+INSERT INTO public.rol_has_option (id_role, id_option)
+SELECT 1, id_option FROM public."option" WHERE route = 'reporte/consumo';
+
+--------------------------------
