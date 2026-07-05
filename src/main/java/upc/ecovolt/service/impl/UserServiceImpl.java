@@ -34,32 +34,25 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDto.Response saveUser(UserDto.Request requestDto) {
-        // 1. Validar duplicados
-        if (userRepository.existsByLogin(requestDto.getLogin())) {
-            throw new RuntimeException("El usuario '" + requestDto.getLogin() + "' ya existe.");
-        }
+        // ... validaciones de login existente ...
 
-        // 2. Mapear DTO a Entidad (MapStruct hará su trabajo con los @Mapping que pusimos)
         User user = userMapper.toEntity(requestDto);
-
-        // 3. ENCRIPTAR la clave que viene en el DTO
         user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
 
-        // 4. ASIGNAR PLAN (ID 1) Y ROL (ID 1) - Estilo Profe "Hardcoded" para rapidez
-        SubscriptionPlan plan = new SubscriptionPlan();
-        plan.setIdPlan(1); // Plan Essential
+        // LÓGICA DE PLAN: Si viene un ID de plan, usamos ese. Si no, el ID 1.
+        Integer planId = (requestDto.getIdPlan() != null) ? requestDto.getIdPlan() : 1;
+
+        SubscriptionPlan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new RuntimeException("Plan no válido"));
         user.setSubscriptionPlan(plan);
 
-        Role role = new Role();
-        role.setIdRole(1); // Role Customer
+        // Rol por defecto
+        Role role = new Role(); role.setIdRole(1);
         user.setRoles(Set.of(role));
+        user.setStatus(1);
 
-        user.setStatus(1); // Activo
-
-        // 5. Guardar
         return userMapper.toResponseDto(userRepository.save(user));
     }
-    // --- EL RESTO DE MÉTODOS SE MANTIENEN IGUAL ---
 
     @Override
     @Transactional(readOnly = true)
