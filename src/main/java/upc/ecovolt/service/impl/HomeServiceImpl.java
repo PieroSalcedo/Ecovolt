@@ -97,6 +97,8 @@ public class HomeServiceImpl implements HomeService {
     @Override
     @Transactional
     public HomeDto.Response updateHome(Long idHome, HomeDto.Request requestDto) {
+        validateOwnership(idHome);
+
         return homeRepository.findById(idHome).map(existing -> {
             existing.setAddress(requestDto.getAddress());
             existing.setAlias(requestDto.getAlias());

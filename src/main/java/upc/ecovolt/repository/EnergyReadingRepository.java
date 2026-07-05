@@ -82,4 +82,28 @@ public interface EnergyReadingRepository extends JpaRepository<EnergyReading, Lo
      */
     @Query("select avg(er.voltage) from EnergyReading er where er.device.idDevice = ?1")
     Optional<Double> getAverageVoltageByDevice(Long idDevice);
+
+    /*
+     * REGLA DE INNOVACIÃ“N: Ranking de consumo por dispositivo.
+     * Alimenta el Smart Advisor para detectar quÃ© equipo impacta mÃ¡s el recibo.
+     */
+    @Query("select er.device.name, sum(er.wattage) from EnergyReading er " +
+            "where er.device.room.home.idHome = ?1 " +
+            "and er.readingAt between ?2 and ?3 " +
+            "and er.status = 1 " +
+            "group by er.device.name " +
+            "order by sum(er.wattage) desc")
+    List<Object[]> findTopDeviceConsumptionByHome(Long idHome, LocalDateTime start, LocalDateTime end, Pageable pageable);
+
+    /*
+     * REGLA DE INNOVACIÃ“N: Ranking de consumo por ambiente.
+     * Permite que la IA recomiende acciones por zona de la vivienda.
+     */
+    @Query("select er.device.room.name, sum(er.wattage) from EnergyReading er " +
+            "where er.device.room.home.idHome = ?1 " +
+            "and er.readingAt between ?2 and ?3 " +
+            "and er.status = 1 " +
+            "group by er.device.room.name " +
+            "order by sum(er.wattage) desc")
+    List<Object[]> findTopRoomConsumptionByHome(Long idHome, LocalDateTime start, LocalDateTime end, Pageable pageable);
 }

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import upc.ecovolt.entity.DataCatalog;
 import upc.ecovolt.entity.Room;
 import upc.ecovolt.entity.Home;
 import upc.ecovolt.mapping.dto.RoomDto;
@@ -108,7 +109,21 @@ public class RoomServiceImpl implements RoomService {
 
         return roomRepository.findById(idRoom).map(existing -> {
             existing.setName(requestDto.getName());
-            // Actualizar otros campos que vengan en el DTO (floorNumber, areaSqm, etc.)
+            existing.setFloorNumber(requestDto.getFloorNumber());
+            existing.setAreaSqm(requestDto.getAreaSqm());
+            existing.setOrientation(requestDto.getOrientation());
+
+            if (requestDto.getIdRoomType() != null && requestDto.getIdRoomType() > 0) {
+                DataCatalog roomType = new DataCatalog();
+                roomType.setIdDataCatalog(requestDto.getIdRoomType());
+                existing.setRoomType(roomType);
+            }
+
+            if (requestDto.getIdHome() != null && requestDto.getIdHome() > 0) {
+                Home home = homeRepository.findById(requestDto.getIdHome())
+                        .orElseThrow(() -> new RuntimeException("Casa no encontrada"));
+                existing.setHome(home);
+            }
 
             return roomMapper.toResponseDto(roomRepository.save(existing));
         }).orElseThrow(() -> new RuntimeException("Ambiente no encontrado"));
