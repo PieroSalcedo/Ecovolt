@@ -2,13 +2,21 @@ package upc.ecovolt.repository;
 
 import java.util.List;
 import java.util.Optional;
+
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import upc.ecovolt.entity.User;
 import upc.ecovolt.entity.Role;
 import upc.ecovolt.entity.Option;
 
 public interface UserRepository extends JpaRepository<User, Long> {
+
+    @Modifying
+    @Transactional
+    @Query("update User u set u.subscriptionPlan.idPlan = ?2 where u.idUser = ?1")
+    void updatePlan(Long idUser, Integer idPlan);
 
     /*
      * REGLA DE SEGURIDAD: Autenticación.

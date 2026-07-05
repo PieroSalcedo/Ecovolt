@@ -55,6 +55,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
+    public void updateUserPlan(Long idUser, Integer idPlan) {
+        log.info("Actualizando plan del usuario ID: {} al Plan ID: {}", idUser, idPlan);
+        userRepository.updatePlan(idUser, idPlan);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<UserDto.Response> findAllUsers() {
         return userMapper.toResponseDtoList(userRepository.findAll());

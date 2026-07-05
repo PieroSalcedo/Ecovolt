@@ -14,4 +14,9 @@ public interface UserMapper extends GenericMapper<User, UserDto.Request, UserDto
     @Mapping(target = "lastName", source = "lastName")
     @Mapping(target = "email", source = "email")
     User toEntity(UserDto.Request requestDto);
+
+    @Override
+    @Mapping(target = "idPlan", source = "subscriptionPlan.idPlan")
+    @Mapping(target = "planName", source = "subscriptionPlan.name")
+    UserDto.Response toResponseDto(User entity);
 }

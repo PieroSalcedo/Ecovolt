@@ -17,9 +17,10 @@ public class UserDto {
     public static class Response {
         private Long idUser;
         private String login;
-        private String firstName;
-        private String lastName;
+        private String fullName;
         private String email;
+        private Integer idPlan;
+        private String planName;
         private Integer status;
     }
 }

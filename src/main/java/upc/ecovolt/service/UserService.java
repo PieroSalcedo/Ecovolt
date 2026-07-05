@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public interface UserService {
 
+    void updateUserPlan(Long idUser, Integer idPlan);
+
     List<UserDto.Response> findAllUsers();
 
     Optional<UserDto.Response> findUserById(Long idUser);
