@@ -172,6 +172,22 @@ CREATE TABLE public.energy_reading (
 	CONSTRAINT fkctlidwuqld85gcgdlle6dxktf FOREIGN KEY (id_device) REFERENCES public.device(id_device)
 );
 
+--------------------------------
+--------------------------------
+
+-- Agregamos las columnas para Cuarto y Dispositivo
+ALTER TABLE public.energy_goal ADD COLUMN id_room int8 NULL;
+ALTER TABLE public.energy_goal ADD COLUMN id_device int8 NULL;
+
+-- Hacemos que id_home sea opcional (ahora la meta puede ser solo para un foco o un cuarto)
+ALTER TABLE public.energy_goal ALTER COLUMN id_home DROP NOT NULL;
+
+-- Constraints
+ALTER TABLE public.energy_goal ADD CONSTRAINT fk_goal_room FOREIGN KEY (id_room) REFERENCES public.room(id_room);
+ALTER TABLE public.energy_goal ADD CONSTRAINT fk_goal_device FOREIGN KEY (id_device) REFERENCES public.device(id_device);
+
+-----------------------------------
+-----------------------------------
 
 -- Desactivar triggers temporalmente para evitar errores de FK durante el truncado
 TRUNCATE TABLE public.energy_reading RESTART IDENTITY CASCADE;
