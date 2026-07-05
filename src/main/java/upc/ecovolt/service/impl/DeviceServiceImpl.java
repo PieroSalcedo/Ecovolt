@@ -47,6 +47,13 @@ public class DeviceServiceImpl implements DeviceService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<DeviceDto.Response> findByUserId(Long idUser) {
+        List<Device> entidades = deviceRepository.findByUserId(idUser);
+        return deviceMapper.toResponseDtoList(entidades);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<DeviceDto.Response> consultaDispositivoDinamica(Long idHome, Long idRoom, String name) {
         List<Device> lista = deviceRepository.consultaDispositivoDinamica(idHome, idRoom, name);
         return deviceMapper.toResponseDtoList(lista);

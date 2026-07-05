@@ -1,6 +1,9 @@
 package upc.ecovolt.service;
 
 import upc.ecovolt.mapping.dto.EnergyReadingDto;
+import upc.ecovolt.mapping.dto.ReporteCasaDTO;
+import upc.ecovolt.mapping.dto.ReporteCuartoDTO;
+import upc.ecovolt.mapping.dto.ReporteDispositivoDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -10,6 +13,12 @@ import java.util.Optional;
 public interface EnergyReadingService {
 
     List<EnergyReadingDto.Response> findAllReadings();
+
+    List<ReporteCasaDTO> reporteConsumoPorCasa(Long idUser);
+
+    List<ReporteCuartoDTO> reporteConsumoPorCuarto(Long idHome);
+
+    List<ReporteDispositivoDTO> reporteConsumoPorDispositivo(Long idRoom);
 
     void delete(Long idReading);
 

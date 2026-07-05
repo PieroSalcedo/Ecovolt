@@ -8,8 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.Device;
 import upc.ecovolt.entity.EnergyReading;
-import upc.ecovolt.mapping.dto.EnergyReadingDto;
-import upc.ecovolt.mapping.dto.EnergyReadingMapper;
+import upc.ecovolt.mapping.dto.*;
 import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.EnergyReadingRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
@@ -46,6 +45,25 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
                 throw new RuntimeException("Acceso denegado: No tienes permisos sobre este dispositivo.");
             }
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReporteCasaDTO> reporteConsumoPorCasa(Long idUser) {
+        return readingRepository.reporteConsumoPorCasa(idUser);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReporteCuartoDTO> reporteConsumoPorCuarto(Long idHome) {
+        return readingRepository.reporteConsumoPorCuarto(idHome);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReporteDispositivoDTO> reporteConsumoPorDispositivo(Long idRoom) {
+        log.info("Generando reporte de consumo para el cuarto ID: {}", idRoom);
+        return readingRepository.reporteConsumoPorDispositivo(idRoom);
     }
 
     @Override

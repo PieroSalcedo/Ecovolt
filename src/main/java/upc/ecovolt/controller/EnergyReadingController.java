@@ -1,13 +1,13 @@
 package upc.ecovolt.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import upc.ecovolt.mapping.dto.ApiResponseDto;
-import upc.ecovolt.mapping.dto.EnergyReadingDto;
+import upc.ecovolt.mapping.dto.*;
+import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.EnergyReadingService;
 import upc.ecovolt.util.WebUtil;
 
@@ -36,6 +36,25 @@ public class EnergyReadingController {
             @RequestParam(name = "limit", defaultValue = "20") int limit) {
         var lista = readingService.findLatestReadingsByDevice(idDevice, limit);
         return WebUtil.ok(lista, "Últimas lecturas recuperadas.");
+    }
+
+    @GetMapping("/reporte/casas")
+    public ResponseEntity<List<ReporteCasaDTO>> getReporteCasas() {
+        UsuarioPrincipal principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Ahora que el Service tiene el método, esto compilará bien
+        return ResponseEntity.ok(readingService.reporteConsumoPorCasa(principal.getIdUser()));
+    }
+
+    @GetMapping("/reporte/cuartos/{idHome}")
+    public ResponseEntity<List<ReporteCuartoDTO>> getReporteCuartos(@PathVariable Long idHome) {
+        return ResponseEntity.ok(readingService.reporteConsumoPorCuarto(idHome));
+    }
+
+    @GetMapping("/reporte/dispositivos/{idRoom}")
+    public ResponseEntity<List<ReporteDispositivoDTO>> getReporteDispositivos(@PathVariable Long idRoom) {
+        // No necesitamos el principal aquí porque el filtro es por ID de cuarto directo
+        List<ReporteDispositivoDTO> lista = readingService.reporteConsumoPorDispositivo(idRoom);
+        return ResponseEntity.ok(lista);
     }
 
     @GetMapping("/device/{idDevice}/abnormal")

@@ -19,6 +19,9 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
             @Param("idRoom") Long idRoom,
             @Param("name") String name);
 
+    @Query("select d from Device d where d.room.home.user.idUser = ?1 and d.status = 1")
+    List<Device> findByUserId(Long idUser);
+
     /*
      * REGLA DE NEGOCIO: Identificación Única de Hardware.
      * Busca un dispositivo por su número de serie (MAC/UUID).

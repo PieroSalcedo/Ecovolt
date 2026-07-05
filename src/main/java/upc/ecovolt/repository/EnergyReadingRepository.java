@@ -9,8 +9,34 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import upc.ecovolt.entity.EnergyReading;
+import upc.ecovolt.mapping.dto.ReporteCasaDTO;
+import upc.ecovolt.mapping.dto.ReporteCuartoDTO;
+import upc.ecovolt.mapping.dto.ReporteDispositivoDTO;
 
 public interface EnergyReadingRepository extends JpaRepository<EnergyReading, Long> {
+
+    @Query("SELECT new upc.ecovolt.mapping.dto.ReporteCasaDTO(r.home.alias, SUM(er.wattage)) " +
+            "FROM EnergyReading er " +
+            "JOIN er.device d " +
+            "JOIN d.room r " +
+            "WHERE er.device.room.home.user.idUser = ?1 " +
+            "GROUP BY r.home.alias")
+    List<ReporteCasaDTO> reporteConsumoPorCasa(Long idUser);
+
+    @Query("SELECT new upc.ecovolt.mapping.dto.ReporteCuartoDTO(r.name, SUM(er.wattage)) " +
+            "FROM EnergyReading er " +
+            "JOIN er.device d " +
+            "JOIN d.room r " +
+            "WHERE r.home.idHome = ?1 " +
+            "GROUP BY r.name")
+    List<ReporteCuartoDTO> reporteConsumoPorCuarto(Long idHome);
+
+    @Query("SELECT new upc.ecovolt.mapping.dto.ReporteDispositivoDTO(d.name, SUM(er.wattage)) " +
+            "FROM EnergyReading er " +
+            "JOIN er.device d " +
+            "WHERE d.room.idRoom = ?1 " +
+            "GROUP BY d.name")
+    List<ReporteDispositivoDTO> reporteConsumoPorDispositivo(Long idRoom);
 
     /*
      * REGLA DE NEGOCIO: Cálculo de Consumo Acumulado por Dispositivo.

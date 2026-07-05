@@ -3,10 +3,15 @@ package upc.ecovolt.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import upc.ecovolt.mapping.dto.ApiResponseDto;
 import upc.ecovolt.mapping.dto.DeviceDto;
+import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.DeviceService;
 import upc.ecovolt.util.WebUtil;
 import upc.ecovolt.util.AppSettings;
@@ -18,9 +23,25 @@ import java.util.List;
 @RequestMapping("/api/v1/devices")
 @RequiredArgsConstructor
 @CrossOrigin(origins = AppSettings.URL_CROSS_ORIGIN) // Para conectar con Angular
+@Slf4j
 public class DeviceController {
 
     private final DeviceService deviceService;
+
+    @GetMapping("/mis-dispositivos")
+    public ResponseEntity<ApiResponseDto<List<DeviceDto.Response>>> getMyDevices() {
+
+        UsuarioPrincipal principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long idLogueado = principal.getIdUser();
+
+        log.info("Cargando equipos para el usuario logueado: {}", idLogueado);
+
+        // 2. Llamamos al service pasándole el ID que sacamos del Token
+        List<DeviceDto.Response> lista = deviceService.findByUserId(idLogueado);
+
+        // 3. Respondemos con WebUtil
+        return WebUtil.ok(lista, "Tus dispositivos han sido cargados.");
+    }
 
     @GetMapping("/consultaDinamica")
     @Operation(summary = "Consulta dinámica de dispositivos")
