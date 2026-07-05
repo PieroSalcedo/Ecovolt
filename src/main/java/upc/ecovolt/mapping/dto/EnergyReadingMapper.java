@@ -11,4 +11,9 @@ public interface EnergyReadingMapper extends GenericMapper<EnergyReading, Energy
     @Override
     @Mapping(target = "device.idDevice", source = "idDevice")
     EnergyReading toEntity(EnergyReadingDto.Request requestDto);
+
+    @Override
+    // Ahora esta línea ya no fallará porque idDevice existe en el Response
+    @Mapping(target = "idDevice", source = "device.idDevice")
+    EnergyReadingDto.Response toResponseDto(EnergyReading entity);
 }

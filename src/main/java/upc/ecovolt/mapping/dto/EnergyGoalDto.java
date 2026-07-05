@@ -2,25 +2,22 @@ package upc.ecovolt.mapping.dto;
 
 import lombok.Data;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 public class EnergyGoalDto {
     @Data
     public static class Request {
-        private BigDecimal targetValue; // El valor de la meta (ej. no pasar de 200 kWh)
-        private LocalDate startDate;
-        private LocalDate endDate;
-        private Long idHome;           // ID de la casa a la que aplica la meta
+        private BigDecimal targetValue; // Mapea monthlyLimitKwh
+        private Integer alertThresholdPercentage;
+        private Long idHome;
     }
 
     @Data
     public static class Response {
-        private Long idGoal;
+        private Integer idGoal;
         private BigDecimal targetValue;
-        private LocalDate startDate;
-        private LocalDate endDate;
+        private Integer alertThresholdPercentage;
         private Long idHome;
-        private String homeAddress;    // Para identificar la casa fácilmente
+        private String homeAddress;
         private Integer status;
     }
 }

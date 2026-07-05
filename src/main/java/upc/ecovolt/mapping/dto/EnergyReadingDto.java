@@ -18,5 +18,8 @@ public class EnergyReadingDto {
         private BigDecimal wattage;
         private BigDecimal voltage;
         private LocalDateTime readingAt;
+        private Integer status;
+        // AGREGA ESTA LÍNEA:
+        private Long idDevice;
     }
 }

@@ -9,10 +9,12 @@ import upc.ecovolt.entity.EnergyGoal;
 public interface EnergyGoalMapper extends GenericMapper<EnergyGoal, EnergyGoalDto.Request, EnergyGoalDto.Response> {
 
     @Override
+    @Mapping(target = "monthlyLimitKwh", source = "targetValue")
     @Mapping(target = "home.idHome", source = "idHome")
     EnergyGoal toEntity(EnergyGoalDto.Request requestDto);
 
     @Override
+    @Mapping(target = "targetValue", source = "monthlyLimitKwh")
     @Mapping(target = "idHome", source = "home.idHome")
     @Mapping(target = "homeAddress", source = "home.address")
     EnergyGoalDto.Response toResponseDto(EnergyGoal entity);
