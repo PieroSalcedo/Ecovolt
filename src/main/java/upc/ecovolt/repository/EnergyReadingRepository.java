@@ -3,6 +3,7 @@ package upc.ecovolt.repository;
 import java.util.List;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -58,4 +59,28 @@ public interface EnergyReadingRepository extends JpaRepository<EnergyReading, Lo
             "and er.device.category.description = ?2 " +
             "and er.readingAt between ?3 and ?4")
     BigDecimal sumConsumptionByCategory(Long idHome, String categoryDescription, LocalDateTime start, LocalDateTime end);
+
+    /*
+     * REGLA DE INNOVACION: Ranking de consumo por dispositivo.
+     * Alimenta el Smart Advisor para detectar que equipo impacta mas el recibo.
+     */
+    @Query("select er.device.name, sum(er.wattage) from EnergyReading er " +
+            "where er.device.room.home.idHome = ?1 " +
+            "and er.readingAt between ?2 and ?3 " +
+            "and er.status = 1 " +
+            "group by er.device.name " +
+            "order by sum(er.wattage) desc")
+    List<Object[]> findTopDeviceConsumptionByHome(Long idHome, LocalDateTime start, LocalDateTime end, Pageable pageable);
+
+    /*
+     * REGLA DE INNOVACION: Ranking de consumo por ambiente.
+     * Permite que la IA recomiende acciones por zona de la vivienda.
+     */
+    @Query("select er.device.room.name, sum(er.wattage) from EnergyReading er " +
+            "where er.device.room.home.idHome = ?1 " +
+            "and er.readingAt between ?2 and ?3 " +
+            "and er.status = 1 " +
+            "group by er.device.room.name " +
+            "order by sum(er.wattage) desc")
+    List<Object[]> findTopRoomConsumptionByHome(Long idHome, LocalDateTime start, LocalDateTime end, Pageable pageable);
 }
