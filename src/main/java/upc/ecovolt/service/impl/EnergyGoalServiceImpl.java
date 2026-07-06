@@ -6,11 +6,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.EnergyGoal;
+import upc.ecovolt.entity.Device;
 import upc.ecovolt.entity.Home;
+import upc.ecovolt.entity.Room;
 import upc.ecovolt.mapping.dto.EnergyGoalDto;
 import upc.ecovolt.mapping.dto.EnergyGoalMapper;
+import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.EnergyGoalRepository;
 import upc.ecovolt.repository.HomeRepository;
+import upc.ecovolt.repository.RoomRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.EnergyGoalService;
 
@@ -24,6 +28,8 @@ public class EnergyGoalServiceImpl implements EnergyGoalService {
 
     private final EnergyGoalRepository goalRepository;
     private final HomeRepository homeRepository;
+    private final RoomRepository roomRepository;
+    private final DeviceRepository deviceRepository;
     private final EnergyGoalMapper goalMapper;
 
     /**
@@ -95,6 +101,21 @@ public class EnergyGoalServiceImpl implements EnergyGoalService {
         // 2. Mapeo y persistencia
         EnergyGoal entity = goalMapper.toEntity(requestDto);
         entity.setHome(home);
+        entity.setRoom(null);
+        entity.setDevice(null);
+
+        if (requestDto.getIdRoom() != null && requestDto.getIdRoom() > 0) {
+            Room room = roomRepository.findById(requestDto.getIdRoom())
+                    .orElseThrow(() -> new RuntimeException("Cuarto no encontrado."));
+            entity.setRoom(room);
+        }
+
+        if (requestDto.getIdDevice() != null && requestDto.getIdDevice() > 0) {
+            Device device = deviceRepository.findById(requestDto.getIdDevice())
+                    .orElseThrow(() -> new RuntimeException("Dispositivo no encontrado."));
+            entity.setDevice(device);
+        }
+
         entity.setStatus(1); // Activa por defecto
 
         return goalMapper.toResponseDto(goalRepository.save(entity));
