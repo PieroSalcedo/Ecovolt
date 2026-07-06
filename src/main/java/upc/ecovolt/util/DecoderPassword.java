@@ -12,10 +12,10 @@ public class DecoderPassword {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
         // 1. La contraseña que el usuario escribe en el login (ejemplo)
-        String passwordIngresado = "piero";
+        String passwordIngresado = "alonso2026";
 
         // 2. El hash que copiaste de tu base de datos (ejemplo de un hash real)
-        String hashEnBaseDatos = "$2a$10$.5VYa9MURD74o48laNGZNumd56qlEN4LaL5VWwz/SArKLrC8WH0jy";
+        String hashEnBaseDatos = "$2a$10$/rGNqHthMRADWD8BqRBwxe7RoZZEqI4WoAM26h9oFTF2dHsXK2.8O";
 
         boolean isMatch = passwordEncoder.matches(passwordIngresado, hashEnBaseDatos);
 

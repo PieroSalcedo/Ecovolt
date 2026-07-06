@@ -1,13 +1,14 @@
 package upc.ecovolt.mapping.dto.auth;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import upc.ecovolt.mapping.dto.OptionDto;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class JwtResponseDto {
     private String token;
     private String type = "Bearer";
@@ -15,4 +16,5 @@ public class JwtResponseDto {
     private String login;
     private String fullName;
     private List<String> roles;
+    private List<OptionDto.Response> opciones;
 }

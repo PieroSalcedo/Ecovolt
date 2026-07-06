@@ -4,51 +4,69 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.query.Param;
 import upc.ecovolt.entity.Device;
 
-@Repository
 public interface DeviceRepository extends JpaRepository<Device, Long> {
+
+    @Query("select d from Device d where " +
+            "(:idHome = -1 or d.room.home.idHome = :idHome) and " +
+            "(:idRoom = -1 or d.room.idRoom = :idRoom) and " +
+            "LOWER(d.name) LIKE LOWER(CONCAT('%', :name, '%')) and " +
+            "d.status = 1")
+    List<Device> consultaDispositivoDinamica(
+            @Param("idHome") Long idHome,
+            @Param("idRoom") Long idRoom,
+            @Param("name") String name);
+
+    @Query("select d from Device d where d.room.home.user.idUser = ?1 and d.status = 1")
+    List<Device> findByUserId(Long idUser);
+
+    @Query("select count(d) from Device d where d.room.home.user.idUser = ?1 and d.status = 1")
+    long countActiveDevicesByUser(Long idUser);
 
     /*
      * REGLA DE NEGOCIO: Identificación Única de Hardware.
      * Busca un dispositivo por su número de serie (MAC/UUID).
      */
-    @Query("select d from Device d where d.serialNumber = ?1")
     Optional<Device> findBySerialNumber(String serialNumber);
 
     /*
-     * REGLA DE NEGOCIO: Segmentación por Categoría (DataCatalogo).
-     * Ejemplo: "Tráeme todos los dispositivos de 'Iluminación'".
+     * REGLA DE NEGOCIO: Segmentación por Categoría.
+     * Lista dispositivos activos (status=1) por el nombre de su categoría.
+     * Ejemplo: "Iluminación", "Climatización".
      */
-    @Query("select d from Device d where d.category.description = ?1 and d.status = 1")
-    List<Device> findByCategoryName(String categoryDescription);
+    List<Device> findByCategory_DescriptionAndStatus(String description, Integer status);
 
     /*
      * REGLA DE NEGOCIO: Inventario por Habitación.
-     * Lista los equipos instalados en un ambiente específico.
+     * Filtra equipos activos en una habitación específica.
      */
-    @Query("select d from Device d where d.room.id = ?1 and d.status = 1")
-    List<Device> findByRoomId(Long idRoom);
+    List<Device> findByRoom_IdRoomAndStatus(Long idRoom, Integer status);
 
     /*
-     * REGLA DE NEGOCIO: Inventario por Propiedad.
-     * Lista todos los dispositivos de una casa (Device -> Room -> Home).
+     * REGLA DE NEGOCIO: Inventario por Propiedad (Navegación Profunda).
+     * El Frontend lo usará para listar todos los dispositivos de una casa.
+     * Ruta: Device -> Room -> Home.
      */
-    @Query("select d from Device d where d.room.home.id = ?1 and d.status = 1")
-    List<Device> findByHomeId(Long idHome);
+    List<Device> findByRoom_Home_IdHomeAndStatus(Long idHome, Integer status);
 
     /*
      * REGLA DE NEGOCIO: Análisis de Fabricante.
-     * Lista equipos de una marca específica.
+     * Lista equipos de una marca ignorando mayúsculas/minúsculas.
      */
-    @Query("select d from Device d where d.manufacturer = ?1")
-    List<Device> findByManufacturer(String manufacturer);
+    List<Device> findByManufacturerIgnoreCase(String manufacturer);
 
     /*
-     * REGLA DE NEGOCIO: Gestión de Mantenimiento.
-     * Cuenta cuántos dispositivos tiene un usuario en un estado específico.
+     * REGLA DE NEGOCIO: Gestión de Mantenimiento / Dashboard.
+     * Cuenta cuántos dispositivos tiene un usuario según su estado.
+     * Ruta: Device -> Room -> Home -> User.
      */
-    @Query("select count(d) from Device d where d.room.home.user.id = ?1 and d.status = ?2")
-    long countByUserIdAndStatus(Long idUser, Integer status);
+    long countByRoom_Home_User_IdUserAndStatus(Long idUser, Integer status);
+
+    /*
+     * REGLA DE NEGOCIO: Buscador amigable en el Dashboard.
+     * Permite al usuario buscar por el nombre asignado al dispositivo.
+     */
+    List<Device> findByNameContainingIgnoreCaseAndRoom_Home_IdHome(String name, Long idHome);
 }

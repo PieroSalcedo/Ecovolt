@@ -1,8 +1,9 @@
 package upc.ecovolt.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingRequestDto;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingResponseDto;
+import upc.ecovolt.mapping.dto.EnergyReadingDto;
+import upc.ecovolt.mapping.dto.ReporteCasaDTO;
+import upc.ecovolt.mapping.dto.ReporteCuartoDTO;
+import upc.ecovolt.mapping.dto.ReporteDispositivoDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,36 +12,35 @@ import java.util.Optional;
 
 public interface EnergyReadingService {
 
-    // --- ACCESO ADMINISTRATIVO (STAFF) ---
-    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
-    List<EnergyReadingResponseDto> findAllReadings();
+    List<EnergyReadingDto.Response> findAllReadings();
 
-    @PreAuthorize("hasRole('ADMIN')")
-    void delete(Long id);
+    List<ReporteCasaDTO> reporteConsumoPorCasa(Long idUser);
 
-    // --- ACCESO POR PROPIEDAD (OWNERSHIP / ANALYTICS) ---
+    List<ReporteCuartoDTO> reporteConsumoPorCuarto(Long idHome);
 
-    @PreAuthorize("isAuthenticated()")
-    Optional<EnergyReadingResponseDto> findReadingById(Long id);
+    List<ReporteDispositivoDTO> reporteConsumoPorDispositivo(Long idRoom);
 
-    @PreAuthorize("isAuthenticated()") // La validación de que el sensor es suyo se hace en el Impl
-    EnergyReadingResponseDto saveReading(EnergyReadingRequestDto requestDto);
+    BigDecimal sumTotalHome(Long idHome);
 
-    @PreAuthorize("isAuthenticated()")
+    BigDecimal sumTotalRoom(Long idRoom);
+
+    BigDecimal sumTotalDevice(Long idDevice);
+
+    void delete(Long idReading);
+
+    Optional<EnergyReadingDto.Response> findReadingById(Long idReading);
+
+    EnergyReadingDto.Response saveReading(EnergyReadingDto.Request requestDto);
+
     BigDecimal sumWattageByDeviceAndPeriod(Long idDevice, LocalDateTime start, LocalDateTime end);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT') or isAuthenticated()")
     Double getAverageVoltageByDevice(Long idDevice);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST') or isAuthenticated()")
     BigDecimal sumTotalConsumptionByHome(Long idHome, LocalDateTime start, LocalDateTime end);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT') or isAuthenticated()")
-    List<EnergyReadingResponseDto> findLatestReadingsByDevice(Long idDevice);
+    List<EnergyReadingDto.Response> findLatestReadingsByDevice(Long idDevice, int limit);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST') or isAuthenticated()")
-    List<EnergyReadingResponseDto> findAbnormalConsumption(Long idDevice, BigDecimal threshold);
+    List<EnergyReadingDto.Response> findAbnormalConsumption(Long idDevice, BigDecimal threshold);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST') or isAuthenticated()")
     BigDecimal sumConsumptionByCategory(Long idHome, String categoryDescription, LocalDateTime start, LocalDateTime end);
 }

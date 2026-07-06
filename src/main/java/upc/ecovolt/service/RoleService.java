@@ -1,26 +1,27 @@
 package upc.ecovolt.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.mapping.dto.roledto.RoleRequestDto;
-import upc.ecovolt.mapping.dto.roledto.RoleResponseDto;
+import upc.ecovolt.mapping.dto.RoleDto;
 import java.util.List;
 import java.util.Optional;
 
 public interface RoleService {
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
-    List<RoleResponseDto> findAll();
+    List<RoleDto.Response> findAll();
 
-    @PreAuthorize("hasRole('ADMIN')")
-    Optional<RoleResponseDto> findByNombre(String nombre);
+    Optional<RoleDto.Response> findByName(String name);
 
-    @PreAuthorize("hasRole('ADMIN')") // REGLA CRÍTICA: Solo el dueño de la App crea roles
-    RoleResponseDto save(RoleRequestDto requestDto);
+    RoleDto.Response save(RoleDto.Request requestDto);
 
-    // REGLA DE NEGOCIO: Reporte para Analistas y Admins
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
-    long countUsersByRoleId(Integer idRol);
+    /*
+     * REGLA DE NEGOCIO: Analítica de población por rol.
+     * Útil para el Dashboard administrativo.
+     */
+    long countUsersByRoleId(Integer idRole);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    List<RoleResponseDto> findActiveRoles();
+    List<RoleDto.Response> findActiveRoles();
+
+    /*
+     * NOTA: La seguridad (quién puede ver qué) la manejaremos
+     * mediante la relación con la tabla 'Option' en el SecurityConfig.
+     */
 }

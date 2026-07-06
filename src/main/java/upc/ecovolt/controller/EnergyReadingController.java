@@ -1,102 +1,100 @@
 package upc.ecovolt.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import upc.ecovolt.mapping.dto.ApiResponseDto;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingRequestDto;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingResponseDto;
+import upc.ecovolt.mapping.dto.*;
+import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.EnergyReadingService;
-import upc.ecovolt.util.AppSettings;
+import upc.ecovolt.util.WebUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Tag(name = "Energy Readings", description = "Endpoints para la captura de telemetría IoT y generación de analítica avanzada (BI)")
+@Tag(name = "Energy Readings", description = "Controlador para la analítica de telemetría IoT")
 @RestController
 @RequestMapping("/api/v1/energy-readings")
 @RequiredArgsConstructor
-@CrossOrigin(origins = AppSettings.URL_CROSS_ORIGIN)
+@CrossOrigin(origins = "*")
 public class EnergyReadingController {
 
     private final EnergyReadingService readingService;
 
-    // --- INGESTA DE DATOS (CON NOTIFICACIÓN) ---
-
-    @Operation(summary = "Registrar telemetría (IoT Gateway)",
-            description = "Recibe datos de potencia y voltaje. Valida que el sensor pertenezca al usuario.")
-    @ApiResponse(responseCode = "201", description = "Lectura procesada exitosamente")
     @PostMapping
-    public ResponseEntity<ApiResponseDto<EnergyReadingResponseDto>> create(@Valid @RequestBody EnergyReadingRequestDto request) {
-        var data = readingService.saveReading(request);
-
-        return new ResponseEntity<>(ApiResponseDto.<EnergyReadingResponseDto>builder()
-                .title("Telemetría Recibida")
-                .message("Datos del dispositivo registrados correctamente a las " + data.getCreatedAt().toLocalTime())
-                .status("SUCCESS")
-                .data(data)
-                .build(), HttpStatus.CREATED);
+    public ResponseEntity<ApiResponseDto<EnergyReadingDto.Response>> guardarLectura(@RequestBody EnergyReadingDto.Request request) {
+        var respuesta = readingService.saveReading(request);
+        return WebUtil.ok(respuesta, "Telemetría registrada correctamente.");
     }
 
-    // --- ENDPOINTS DE ANALÍTICA (DATA PURA PARA GRÁFICOS) ---
-
-    @Operation(summary = "Consumo total de la vivienda",
-            description = "Suma toda la energía de una casa. Usado para el gráfico principal del Dashboard.")
-    @GetMapping("/analytics/home/{idHome}/total")
-    public ResponseEntity<BigDecimal> getTotalHomeConsumption(
-            @Parameter(description = "ID de la vivienda", example = "1") @PathVariable Long idHome,
-            @Parameter(description = "Fecha inicio (ISO)", example = "2024-05-14T00:00:00")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @Parameter(description = "Fecha fin (ISO)", example = "2024-05-14T23:59:59")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-        return ResponseEntity.ok(readingService.sumTotalConsumptionByHome(idHome, start, end));
-    }
-
-    @Operation(summary = "Distribución por Categoría (Pie Chart)",
-            description = "Permite saber cuánto se gasta en 'Iluminación', 'AC', etc. (Valor estratégico para DEVIDA)")
-    @GetMapping("/analytics/home/{idHome}/category")
-    public ResponseEntity<BigDecimal> getConsumptionByCategory(
-            @Parameter(description = "ID de la vivienda", example = "1") @PathVariable Long idHome,
-            @Parameter(description = "Categoría del catálogo", example = "Climatización") @RequestParam String categoryName,
-            @Parameter(description = "Fecha inicio", example = "2024-05-14T00:00:00")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @Parameter(description = "Fecha fin", example = "2024-05-14T23:59:59")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-        return ResponseEntity.ok(readingService.sumConsumptionByCategory(idHome, categoryName, start, end));
-    }
-
-    @Operation(summary = "Detección de consumos fantasma",
-            description = "Filtra lecturas que superan un umbral de ruido. Ayuda a identificar fugas eléctricas.")
-    @GetMapping("/device/{idDevice}/abnormal")
-    public ResponseEntity<List<EnergyReadingResponseDto>> getAbnormal(
-            @Parameter(description = "ID del sensor", example = "1") @PathVariable Long idDevice,
-            @Parameter(description = "Umbral de wattage (Watts)", example = "5.0") @RequestParam BigDecimal threshold) {
-        return ResponseEntity.ok(readingService.findAbnormalConsumption(idDevice, threshold));
-    }
-
-    @Operation(summary = "Monitor en tiempo real", description = "Últimas lecturas para velocímetros o indicadores en vivo.")
     @GetMapping("/device/{idDevice}/latest")
-    public ResponseEntity<List<EnergyReadingResponseDto>> getLatest(@PathVariable Long idDevice) {
-        return ResponseEntity.ok(readingService.findLatestReadingsByDevice(idDevice));
+    public ResponseEntity<ApiResponseDto<List<EnergyReadingDto.Response>>> obtenerUltimasLecturas(
+            @PathVariable("idDevice") Long idDevice,
+            @RequestParam(name = "limit", defaultValue = "20") int limit) {
+        var lista = readingService.findLatestReadingsByDevice(idDevice, limit);
+        return WebUtil.ok(lista, "Últimas lecturas recuperadas.");
     }
 
-    @Operation(summary = "Estabilidad de Voltaje (Promedio)", description = "Analiza si la red eléctrica es estable (Soporte técnico).")
-    @GetMapping("/device/{idDevice}/voltage-avg")
-    public ResponseEntity<Double> getVoltageAvg(@PathVariable Long idDevice) {
-        return ResponseEntity.ok(readingService.getAverageVoltageByDevice(idDevice));
+    @GetMapping("/reporte/casas")
+    public ResponseEntity<List<ReporteCasaDTO>> getReporteCasas() {
+        UsuarioPrincipal principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Ahora que el Service tiene el método, esto compilará bien
+        return ResponseEntity.ok(readingService.reporteConsumoPorCasa(principal.getIdUser()));
     }
 
-    @Operation(summary = "Historial Completo (Staff)", description = "AUDITOR ONLY: Lista todas las lecturas del sistema.")
-    @GetMapping
-    public ResponseEntity<List<EnergyReadingResponseDto>> getAll() {
-        return ResponseEntity.ok(readingService.findAllReadings());
+    @GetMapping("/reporte/cuartos/{idHome}")
+    public ResponseEntity<List<ReporteCuartoDTO>> getReporteCuartos(@PathVariable Long idHome) {
+        return ResponseEntity.ok(readingService.reporteConsumoPorCuarto(idHome));
+    }
+
+    @GetMapping("/reporte/dispositivos/{idRoom}")
+    public ResponseEntity<List<ReporteDispositivoDTO>> getReporteDispositivos(@PathVariable Long idRoom) {
+        // No necesitamos el principal aquí porque el filtro es por ID de cuarto directo
+        List<ReporteDispositivoDTO> lista = readingService.reporteConsumoPorDispositivo(idRoom);
+        return ResponseEntity.ok(lista);
+    }
+
+    @GetMapping("/total/home/{id}")
+    public ResponseEntity<ApiResponseDto<BigDecimal>> getConsumoCasa(@PathVariable Long id) {
+        BigDecimal total = readingService.sumTotalHome(id);
+        return WebUtil.ok(total, "Consumo total de la vivienda calculado");
+    }
+
+    @GetMapping("/total/room/{id}")
+    public ResponseEntity<ApiResponseDto<BigDecimal>> getConsumoCuarto(@PathVariable Long id) {
+        BigDecimal total = readingService.sumTotalRoom(id);
+        return WebUtil.ok(total, "Consumo total del ambiente calculado");
+    }
+
+    @GetMapping("/total/device/{id}")
+    public ResponseEntity<ApiResponseDto<BigDecimal>> getConsumoDispositivo(@PathVariable Long id) {
+        BigDecimal total = readingService.sumTotalDevice(id);
+        return WebUtil.ok(total, "Consumo total del dispositivo calculado");
+    }
+
+    @GetMapping("/device/{idDevice}/abnormal")
+    public ResponseEntity<ApiResponseDto<List<EnergyReadingDto.Response>>> detectarConsumoAnormal(
+            @PathVariable("idDevice") Long idDevice,
+            @RequestParam(name = "threshold") BigDecimal threshold) {
+        var lista = readingService.findAbnormalConsumption(idDevice, threshold);
+        return WebUtil.ok(lista, "Reporte de anomalías completado.");
+    }
+
+    @GetMapping("/home/{idHome}/total")
+    public ResponseEntity<ApiResponseDto<BigDecimal>> obtenerConsumoTotalVivienda(
+            @PathVariable("idHome") Long idHome,
+            @RequestParam("start") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam("end") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+        var total = readingService.sumTotalConsumptionByHome(idHome, start, end);
+        return WebUtil.ok(total, "Consumo acumulado calculado.");
+    }
+
+    @GetMapping("/device/{idDevice}/voltage-average")
+    public ResponseEntity<ApiResponseDto<Double>> obtenerPromedioVoltaje(@PathVariable("idDevice") Long idDevice) {
+        var promedio = readingService.getAverageVoltageByDevice(idDevice);
+        return WebUtil.ok(promedio, "Voltaje promedio de red calculado.");
     }
 }

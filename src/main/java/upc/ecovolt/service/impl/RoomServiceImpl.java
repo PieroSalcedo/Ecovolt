@@ -5,12 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import upc.ecovolt.entity.DataCatalog;
 import upc.ecovolt.entity.Room;
 import upc.ecovolt.entity.Home;
-import upc.ecovolt.mapping.dto.roomdto.RoomMapper;
-import upc.ecovolt.mapping.dto.roomdto.RoomRequestDto;
-import upc.ecovolt.mapping.dto.roomdto.RoomResponseDto;
-import upc.ecovolt.repository.DataCatalogoRepository;
+import upc.ecovolt.mapping.dto.RoomDto;
+import upc.ecovolt.mapping.dto.RoomMapper;
+import upc.ecovolt.repository.DataCatalogRepository;
 import upc.ecovolt.repository.HomeRepository;
 import upc.ecovolt.repository.RoomRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
@@ -27,38 +27,44 @@ public class RoomServiceImpl implements RoomService {
 
     private final RoomRepository roomRepository;
     private final HomeRepository homeRepository;
-    private final DataCatalogoRepository dataCatalogoRepository;
+    private final DataCatalogRepository dataCatalogRepository;
     private final RoomMapper roomMapper;
 
     /**
-     * MÉTODO DE CIBERSEGURIDAD: Valida si el usuario actual es dueño de la CASA
-     * donde se encuentra (o se encontrará) el ambiente.
+     * CIBERSEGURIDAD: Valida propiedad sobre la vivienda principal.
      */
-    private void validateHomeOwnership(Long homeId) {
+    private void validateHomeOwnership(Long idHome) {
         var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         boolean isAdmin = principal.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         if (!isAdmin) {
-            Home home = homeRepository.findById(homeId)
+            Home home = homeRepository.findById(idHome)
                     .orElseThrow(() -> new RuntimeException("Error: Vivienda no encontrada."));
-            if (!home.getUser().getId().equals(principal.getIdUser())) {
-                log.error("ATAQUE DETECTADO: El usuario {} intentó manipular ambientes en la Home ID: {}", principal.getLogin(), homeId);
-                throw new RuntimeException("Acceso Denegado: No eres dueño de la propiedad principal.");
+            if (!home.getUser().getIdUser().equals(principal.getIdUser())) {
+                log.error("ACCESO NO AUTORIZADO: Usuario {} intentó acceder a ambientes de Home {}", principal.getLogin(), idHome);
+                throw new RuntimeException("Acceso Denegado: No tienes permisos sobre esta propiedad.");
             }
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<RoomDto.Response> consultaCuartoDinamica(Long idHome, String name, int idTipo) {
+        List<Room> lista = roomRepository.consultaCuartoDinamica(idHome, name, idTipo);
+        return roomMapper.toResponseDtoList(lista);
+    }
+
     /**
-     * MÉTODO DE CIBERSEGURIDAD: Valida propiedad directa sobre un AMBIENTE ya existente.
+     * CIBERSEGURIDAD: Valida propiedad sobre un ambiente específico.
      */
-    private void validateRoomOwnership(Long roomId) {
+    private void validateRoomOwnership(Long idRoom) {
         var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         boolean isAdmin = principal.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         if (!isAdmin) {
-            Room room = roomRepository.findById(roomId)
+            Room room = roomRepository.findById(idRoom)
                     .orElseThrow(() -> new RuntimeException("Error: Ambiente no encontrado."));
-            if (!room.getHome().getUser().getId().equals(principal.getIdUser())) {
+            if (!room.getHome().getUser().getIdUser().equals(principal.getIdUser())) {
                 throw new RuntimeException("Acceso Denegado: Este ambiente no pertenece a tus propiedades.");
             }
         }
@@ -66,84 +72,92 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoomResponseDto> findAllRooms() {
+    public List<RoomDto.Response> findAllRooms() {
         return roomMapper.toResponseDtoList(roomRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<RoomResponseDto> findRoomById(Long id) {
-        validateRoomOwnership(id);
-        return roomRepository.findById(id).map(roomMapper::toResponseDto);
+    public Optional<RoomDto.Response> findRoomById(Long idRoom) {
+        validateRoomOwnership(idRoom);
+        return roomRepository.findById(idRoom).map(roomMapper::toResponseDto);
     }
 
     @Override
     @Transactional
-    public RoomResponseDto saveRoom(RoomRequestDto requestDto) {
-        // CIBERSEGURIDAD: ¿La casa donde quieres crear el cuarto es tuya?
-        validateHomeOwnership(requestDto.getHomeId());
+    public RoomDto.Response saveRoom(RoomDto.Request requestDto) {
+        // CIBERSEGURIDAD: ¿La casa donde quieres crear el ambiente es tuya?
+        validateHomeOwnership(requestDto.getIdHome());
 
-        var home = homeRepository.findById(requestDto.getHomeId()).get();
-        var roomType = dataCatalogoRepository.findById(requestDto.getRoomTypeId())
-                .orElseThrow(() -> new RuntimeException("Error: El Tipo de Ambiente no existe."));
+        Home home = homeRepository.findById(requestDto.getIdHome())
+                .orElseThrow(() -> new RuntimeException("Casa no encontrada"));
 
-        log.info("USER {}: Creando cuarto '{}' en la propiedad '{}'",
-                home.getUser().getLogin(), requestDto.getName(), home.getAlias());
+        log.info("REGISTRO AMBIENTE: Creando '{}' en '{}'", requestDto.getName(), home.getAlias());
 
         Room entity = roomMapper.toEntity(requestDto);
         entity.setHome(home);
-        entity.setRoomType(roomType);
-        entity.setUsuarioRegistro(home.getUser().getLogin());
+        entity.setStatus(1); // Activo por defecto
 
         return roomMapper.toResponseDto(roomRepository.save(entity));
     }
 
     @Override
     @Transactional
-    public RoomResponseDto updateRoom(Long id, RoomRequestDto requestDto) {
-        validateRoomOwnership(id); // Validar antes de editar
-        validateHomeOwnership(requestDto.getHomeId()); // Validar si la nueva casa (si cambió) es suya
+    public RoomDto.Response updateRoom(Long idRoom, RoomDto.Request requestDto) {
+        validateRoomOwnership(idRoom);
+        if (requestDto.getIdHome() != null) validateHomeOwnership(requestDto.getIdHome());
 
-        return roomRepository.findById(id).map(existingRoom -> {
-            existingRoom.setName(requestDto.getName());
-            existingRoom.setFloorNumber(requestDto.getFloorNumber());
-            existingRoom.setOrientation(requestDto.getOrientation());
-            existingRoom.setAreaSqm(requestDto.getAreaSqm());
+        return roomRepository.findById(idRoom).map(existing -> {
+            existing.setName(requestDto.getName());
+            existing.setFloorNumber(requestDto.getFloorNumber());
+            existing.setAreaSqm(requestDto.getAreaSqm());
+            existing.setOrientation(requestDto.getOrientation());
 
-            var roomType = dataCatalogoRepository.findById(requestDto.getRoomTypeId())
-                    .orElseThrow(() -> new RuntimeException("Tipo de ambiente no encontrado"));
-            existingRoom.setRoomType(roomType);
+            if (requestDto.getIdRoomType() != null && requestDto.getIdRoomType() > 0) {
+                DataCatalog roomType = new DataCatalog();
+                roomType.setIdDataCatalog(requestDto.getIdRoomType());
+                existing.setRoomType(roomType);
+            }
 
-            existingRoom.setUsuarioActualizacion(SecurityContextHolder.getContext().getAuthentication().getName());
-            return roomMapper.toResponseDto(roomRepository.save(existingRoom));
+            if (requestDto.getIdHome() != null && requestDto.getIdHome() > 0) {
+                Home home = homeRepository.findById(requestDto.getIdHome())
+                        .orElseThrow(() -> new RuntimeException("Casa no encontrada"));
+                existing.setHome(home);
+            }
+
+            return roomMapper.toResponseDto(roomRepository.save(existing));
         }).orElseThrow(() -> new RuntimeException("Ambiente no encontrado"));
     }
 
     @Override
     @Transactional
-    public void delete(Long id) {
-        validateRoomOwnership(id);
-        roomRepository.deleteById(id);
-    }
+    public void delete(Long idRoom) {
+        validateRoomOwnership(idRoom);
 
-    // --- MÉTODOS DE NEGOCIO PROTEGIDOS ---
+        // REGLA DE NEGOCIO: Borrado lógico para no romper integridad con Dispositivos y Lecturas
+        roomRepository.findById(idRoom).ifPresent(r -> {
+            r.setStatus(0);
+            roomRepository.save(r);
+            log.warn("BORRADO LÓGICO: Ambiente ID {} desactivado", idRoom);
+        });
+    }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoomResponseDto> findByHomeId(Long idHome) {
+    public List<RoomDto.Response> findByHomeId(Long idHome) {
         validateHomeOwnership(idHome);
         return roomMapper.toResponseDtoList(roomRepository.findByHomeId(idHome));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoomResponseDto> findByRoomTypeName(String typeDescription) {
+    public List<RoomDto.Response> findByRoomTypeName(String typeDescription) {
         return roomMapper.toResponseDtoList(roomRepository.findByRoomTypeName(typeDescription));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoomResponseDto> findLargeRooms(BigDecimal minArea) {
+    public List<RoomDto.Response> findLargeRooms(BigDecimal minArea) {
         return roomMapper.toResponseDtoList(roomRepository.findLargeRooms(minArea));
     }
 
@@ -156,15 +170,15 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoomResponseDto> findByHomeAndFloor(Long idHome, Integer floor) {
+    public List<RoomDto.Response> findByHomeAndFloor(Long idHome, Integer floor) {
         validateHomeOwnership(idHome);
         return roomMapper.toResponseDtoList(roomRepository.findByHomeAndFloor(idHome, floor));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoomResponseDto> findByNameAndHome(String name, Long idHome) {
+    public Optional<RoomDto.Response> findByNameAndHome(String name, Long idHome) {
         validateHomeOwnership(idHome);
-        return roomMapper.toResponseDtoList(roomRepository.findByNameAndHome(name, idHome));
+        return roomRepository.findByNameAndHome(name, idHome).map(roomMapper::toResponseDto);
     }
 }

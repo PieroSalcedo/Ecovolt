@@ -1,122 +1,84 @@
 package upc.ecovolt.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import upc.ecovolt.mapping.dto.ApiResponseDto; // Importante
-import upc.ecovolt.mapping.dto.roomdto.RoomRequestDto;
-import upc.ecovolt.mapping.dto.roomdto.RoomResponseDto;
+import upc.ecovolt.mapping.dto.ApiResponseDto;
+import upc.ecovolt.mapping.dto.RoomDto;
 import upc.ecovolt.service.RoomService;
+import upc.ecovolt.util.WebUtil;
 import upc.ecovolt.util.AppSettings;
 
-import java.math.BigDecimal;
 import java.util.List;
 
-@Tag(name = "Rooms", description = "Endpoints para la gestión de ambientes y distribución por pisos")
+@Tag(name = "Rooms", description = "Gestión de ambientes y distribución por casa")
 @RestController
 @RequestMapping("/api/v1/rooms")
 @RequiredArgsConstructor
-@CrossOrigin(origins = AppSettings.URL_CROSS_ORIGIN)
+@CrossOrigin(origins = AppSettings.URL_CROSS_ORIGIN) // Habilita la conexión con Angular
 public class RoomController {
 
     private final RoomService roomService;
 
-    // --- ACCIONES CON NOTIFICACIÓN (POST, PUT, DELETE) ---
+    @GetMapping("/consultaDinamica")
+    public ResponseEntity<ApiResponseDto<List<RoomDto.Response>>> consulta(
+            @RequestParam(name = "name", defaultValue = "") String name,
+            @RequestParam(name = "idHome", defaultValue = "-1") Long idHome,
+            @RequestParam(name = "idTipo", defaultValue = "-1") int idTipo) {
 
-    @Operation(summary = "Registrar un nuevo ambiente", description = "Crea un cuarto vinculado a una casa (Ej: Cocina, Sala).")
-    @ApiResponse(responseCode = "201", description = "Ambiente creado exitosamente")
+        // Llamamos al service (que ya tenemos implementado)
+        var lista = roomService.consultaCuartoDinamica(idHome, name, idTipo);
+        return WebUtil.ok(lista, "Ambientes cargados con éxito");
+    }
+
+    // --- REGISTRO ---
     @PostMapping
-    public ResponseEntity<ApiResponseDto<RoomResponseDto>> create(@Valid @RequestBody RoomRequestDto request) {
+    @Operation(summary = "Registrar habitación", description = "Crea un ambiente vinculado a una vivienda (Ej: Cocina, Dormitorio)")
+    public ResponseEntity<ApiResponseDto<RoomDto.Response>> create(@RequestBody RoomDto.Request request) {
         var data = roomService.saveRoom(request);
-
-        return new ResponseEntity<>(ApiResponseDto.<RoomResponseDto>builder()
-                .title("¡Ambiente Registrado!")
-                .message("El cuarto '" + data.getName() + "' ha sido añadido correctamente a su vivienda.")
-                .status("SUCCESS")
-                .data(data)
-                .build(), HttpStatus.CREATED);
+        return WebUtil.created(data, "El ambiente '" + data.getName() + "' ha sido registrado.");
     }
 
-    @Operation(summary = "Actualizar datos del ambiente", description = "Modifica el nombre, área o tipo de habitación.")
+    // --- ACTUALIZACIÓN ---
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<RoomResponseDto>> update(
-            @Parameter(description = "ID del ambiente a modificar", example = "1") @PathVariable Long id,
-            @Valid @RequestBody RoomRequestDto request) {
-
+    @Operation(summary = "Actualizar ambiente")
+    public ResponseEntity<ApiResponseDto<RoomDto.Response>> update(@PathVariable Long id, @RequestBody RoomDto.Request request) {
         var data = roomService.updateRoom(id, request);
-
-        return ResponseEntity.ok(ApiResponseDto.<RoomResponseDto>builder()
-                .title("Ambiente Actualizado")
-                .message("Los cambios en '" + data.getName() + "' se guardaron con éxito.")
-                .status("SUCCESS")
-                .data(data)
-                .build());
+        return WebUtil.ok(data, "Habitación actualizada correctamente.");
     }
 
-    @Operation(summary = "Eliminar un ambiente", description = "Elimina la habitación y sus configuraciones. Es una acción irreversible.")
+    // --- ELIMINACIÓN ---
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<Void>> delete(
-            @Parameter(description = "ID del ambiente a eliminar", example = "2") @PathVariable Long id) {
-
+    @Operation(summary = "Eliminar ambiente", description = "Realiza un borrado lógico (status=0)")
+    public ResponseEntity<ApiResponseDto<Void>> delete(@PathVariable Long id) {
         roomService.delete(id);
-
-        return ResponseEntity.ok(ApiResponseDto.<Void>builder()
-                .title("Ambiente Eliminado")
-                .message("La habitación ha sido removida del sistema de forma permanente.")
-                .status("SUCCESS")
-                .build());
+        return WebUtil.ok(null, "Ambiente removido del sistema.");
     }
 
-    // --- CONSULTAS DE DATOS (DATA DIRECTA) ---
+    // --- LISTADOS PARA EL FRONTEND (Cascading Selects) ---
 
-    @Operation(summary = "Listar todos los ambientes", description = "Uso administrativo/Staff")
-    @GetMapping
-    public ResponseEntity<List<RoomResponseDto>> getAll() {
-        return ResponseEntity.ok(roomService.findAllRooms());
-    }
-
-    @Operation(summary = "Obtener un ambiente por ID")
-    @GetMapping("/{id}")
-    public ResponseEntity<RoomResponseDto> getById(@PathVariable Long id) {
-        return roomService.findRoomById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @Operation(summary = "Listar ambientes de una casa")
     @GetMapping("/home/{homeId}")
-    public ResponseEntity<List<RoomResponseDto>> getByHome(@PathVariable Long homeId) {
-        return ResponseEntity.ok(roomService.findByHomeId(homeId));
+    @Operation(summary = "Listar ambientes por casa",
+            description = "ESTE LLENA EL COMBOBOX de habitaciones en el formulario de dispositivos.")
+    public ResponseEntity<ApiResponseDto<List<RoomDto.Response>>> getByHome(@PathVariable Long homeId) {
+        var data = roomService.findByHomeId(homeId);
+        return WebUtil.ok(data, "Habitaciones de la propiedad cargadas.");
     }
 
-    @Operation(summary = "Filtrar por tipo de ambiente (DataCatalogo)")
-    @GetMapping("/type")
-    public ResponseEntity<List<RoomResponseDto>> getByType(@RequestParam String typeName) {
-        return ResponseEntity.ok(roomService.findByRoomTypeName(typeName));
+    @GetMapping("/{id}")
+    @Operation(summary = "Obtener detalle de habitación")
+    public ResponseEntity<ApiResponseDto<RoomDto.Response>> getById(@PathVariable Long id) {
+        return roomService.findRoomById(id)
+                .map(room -> WebUtil.ok(room, "Detalle del ambiente"))
+                .orElseThrow(() -> new RuntimeException("No se encontró la habitación"));
     }
 
-    @Operation(summary = "Contar dispositivos en el ambiente")
     @GetMapping("/{id}/devices/count")
-    public ResponseEntity<Long> getDeviceCountInRoom(@PathVariable Long id) {
-        return ResponseEntity.ok(roomService.countDevicesInRoom(id));
-    }
-
-    @Operation(summary = "Filtrar por piso y casa")
-    @GetMapping("/home/{homeId}/floor/{floor}")
-    public ResponseEntity<List<RoomResponseDto>> getByFloor(
-            @PathVariable Long homeId, @PathVariable Integer floor) {
-        return ResponseEntity.ok(roomService.findByHomeAndFloor(homeId, floor));
-    }
-
-    @Operation(summary = "Buscar ambientes grandes (Área m2)")
-    @GetMapping("/large-rooms")
-    public ResponseEntity<List<RoomResponseDto>> getLargeRooms(@RequestParam BigDecimal minArea) {
-        return ResponseEntity.ok(roomService.findLargeRooms(minArea));
+    @Operation(summary = "Contar dispositivos", description = "Muestra cuántos equipos IoT hay en este cuarto específico.")
+    public ResponseEntity<ApiResponseDto<Long>> getDeviceCount(@PathVariable Long id) {
+        var count = roomService.countDevicesInRoom(id);
+        return WebUtil.ok(count, "Conteo de dispositivos en el ambiente.");
     }
 }

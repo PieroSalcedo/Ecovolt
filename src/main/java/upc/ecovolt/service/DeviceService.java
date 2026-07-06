@@ -1,47 +1,37 @@
 package upc.ecovolt.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.mapping.dto.devicedto.DeviceRequestDto;
-import upc.ecovolt.mapping.dto.devicedto.DeviceResponseDto;
+import upc.ecovolt.mapping.dto.DeviceDto;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface DeviceService {
 
-    // --- ACCESO ADMINISTRATIVO / SOPORTE ---
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
-    List<DeviceResponseDto> findAllDevices();
+    List<DeviceDto.Response> consultaDispositivoDinamica(Long idHome, Long idRoom, String name);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
-    List<DeviceResponseDto> findByManufacturer(String manufacturer);
+    List<DeviceDto.Response> findByUserId(Long idUser);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    List<DeviceDto.Response> findAllDevices();
+
+    long countActiveDevicesByUser(Long idUser);
+
+    List<DeviceDto.Response> findByManufacturer(String manufacturer);
+
     long countByUserIdAndStatus(Long idUser, Integer status);
 
-    // --- ACCESO POR PROPIEDAD (OWNERSHIP) ---
+    Optional<DeviceDto.Response> findDeviceById(Long idDevice);
 
-    @PreAuthorize("isAuthenticated()")
-    Optional<DeviceResponseDto> findDeviceById(Long id);
+    DeviceDto.Response saveDevice(DeviceDto.Request requestDto);
 
-    @PreAuthorize("isAuthenticated()")
-    DeviceResponseDto saveDevice(DeviceRequestDto requestDto);
+    DeviceDto.Response updateDevice(Long idDevice, DeviceDto.Request requestDto);
 
-    @PreAuthorize("isAuthenticated()")
-    DeviceResponseDto updateDevice(Long id, DeviceRequestDto requestDto);
+    void delete(Long idDevice);
 
-    @PreAuthorize("isAuthenticated()")
-    void delete(Long id);
+    Optional<DeviceDto.Response> findBySerialNumber(String serialNumber);
 
-    @PreAuthorize("isAuthenticated()")
-    Optional<DeviceResponseDto> findBySerialNumber(String serialNumber);
+    List<DeviceDto.Response> findByCategoryName(String categoryDescription);
 
-    @PreAuthorize("isAuthenticated()")
-    List<DeviceResponseDto> findByCategoryName(String categoryDescription);
+    List<DeviceDto.Response> findByRoomId(Long idRoom);
 
-    @PreAuthorize("isAuthenticated()")
-    List<DeviceResponseDto> findByRoomId(Long idRoom);
-
-    @PreAuthorize("isAuthenticated()")
-    List<DeviceResponseDto> findByHomeId(Long idHome);
+    List<DeviceDto.Response> findByHomeId(Long idHome);
 }

@@ -1,24 +1,19 @@
 package upc.ecovolt.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import upc.ecovolt.mapping.dto.ApiResponseDto; // Importante
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanRequestDto;
-import upc.ecovolt.mapping.dto.subscriptionplandto.SubscriptionPlanResponseDto;
+import upc.ecovolt.mapping.dto.ApiResponseDto;
+import upc.ecovolt.mapping.dto.SubscriptionPlanDto;
 import upc.ecovolt.service.SubscriptionPlanService;
+import upc.ecovolt.util.WebUtil;
 import upc.ecovolt.util.AppSettings;
 
-import java.math.BigDecimal;
 import java.util.List;
 
-@Tag(name = "Subscription Plans", description = "Endpoints para la gestión de monetización y límites SaaS")
+@Tag(name = "Subscription Plans", description = "Gestión de monetización y límites de dispositivos (SaaS)")
 @RestController
 @RequestMapping("/api/v1/plans")
 @RequiredArgsConstructor
@@ -27,78 +22,58 @@ public class SubscriptionPlanController {
 
     private final SubscriptionPlanService planService;
 
-    // --- ACCIONES ADMINISTRATIVAS CON NOTIFICACIÓN ---
+    // --- ACCIONES ADMINISTRATIVAS ---
 
-    @Operation(summary = "Crear un nuevo plan", description = "RESTRICTED: Solo ADMIN o MANAGER. Define precios y límites de dispositivos.")
-    @ApiResponse(responseCode = "201", description = "Plan creado exitosamente")
     @PostMapping
-    public ResponseEntity<ApiResponseDto<SubscriptionPlanResponseDto>> create(@Valid @RequestBody SubscriptionPlanRequestDto request) {
+    @Operation(summary = "Crear nuevo plan", description = "Solo ADMIN/MANAGER. Define el límite de equipos y precio.")
+    public ResponseEntity<ApiResponseDto<SubscriptionPlanDto.Response>> create(@RequestBody SubscriptionPlanDto.Request request) {
         var data = planService.savePlan(request);
-
-        return new ResponseEntity<>(ApiResponseDto.<SubscriptionPlanResponseDto>builder()
-                .title("¡Nuevo Plan Creado!")
-                .message("El plan comercial '" + data.getName() + "' ha sido registrado exitosamente.")
-                .status("SUCCESS")
-                .data(data)
-                .build(), HttpStatus.CREATED);
+        return WebUtil.created(data, "Plan comercial '" + data.getName() + "' registrado.");
     }
 
-    @Operation(summary = "Actualizar un plan existente", description = "RESTRICTED: Solo ADMIN o MANAGER. Modifica reglas y costos.")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<SubscriptionPlanResponseDto>> update(
-            @Parameter(description = "ID del plan a modificar", example = "2") @PathVariable Integer id,
-            @Valid @RequestBody SubscriptionPlanRequestDto request) {
-
+    @Operation(summary = "Actualizar plan")
+    public ResponseEntity<ApiResponseDto<SubscriptionPlanDto.Response>> update(
+            @PathVariable Integer id, @RequestBody SubscriptionPlanDto.Request request) {
         var data = planService.updatePlan(id, request);
-
-        return ResponseEntity.ok(ApiResponseDto.<SubscriptionPlanResponseDto>builder()
-                .title("Plan Actualizado")
-                .message("Las condiciones y límites del plan '" + data.getName() + "' se han modificado correctamente.")
-                .status("SUCCESS")
-                .data(data)
-                .build());
+        return WebUtil.ok(data, "Condiciones del plan actualizadas.");
     }
 
-    @Operation(summary = "Eliminar un plan", description = "RESTRICTED: Solo ADMIN. Retira el plan del catálogo.")
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<Void>> delete(
-            @Parameter(description = "ID del plan a eliminar", example = "3") @PathVariable Integer id) {
-
+    @Operation(summary = "Desactivar plan", description = "Borrado lógico para no afectar usuarios actuales.")
+    public ResponseEntity<ApiResponseDto<Void>> delete(@PathVariable Integer id) {
         planService.delete(id);
-
-        return ResponseEntity.ok(ApiResponseDto.<Void>builder()
-                .title("Plan Eliminado")
-                .message("El plan de suscripción ha sido retirado del sistema de forma permanente.")
-                .status("SUCCESS")
-                .build());
+        return WebUtil.ok(null, "El plan ha sido retirado del catálogo.");
     }
 
-    // --- CONSULTAS DE DATOS DIRECTOS ---
+    // --- CONSULTAS PÚBLICAS Y ANALÍTICAS ---
 
-    @Operation(summary = "Obtener todos los planes activos", description = "ACCESO PÚBLICO")
     @GetMapping
-    public ResponseEntity<List<SubscriptionPlanResponseDto>> getAll() {
-        return ResponseEntity.ok(planService.findAllPlans());
+    @Operation(summary = "Listar todos los planes", description = "Usado para mostrar la tabla de precios en el registro.")
+    public ResponseEntity<ApiResponseDto<List<SubscriptionPlanDto.Response>>> getAll() {
+        var data = planService.findAllPlans();
+        return WebUtil.ok(data, "Catálogo de planes cargado.");
     }
 
-    @Operation(summary = "Obtener un plan por ID", description = "ACCESO PÚBLICO")
     @GetMapping("/{id}")
-    public ResponseEntity<SubscriptionPlanResponseDto> getById(@PathVariable Integer id) {
+    @Operation(summary = "Detalle del plan")
+    public ResponseEntity<ApiResponseDto<SubscriptionPlanDto.Response>> getById(@PathVariable Integer id) {
         return planService.findPlanById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .map(plan -> WebUtil.ok(plan, "Detalle del plan"))
+                .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
     }
 
-    @Operation(summary = "Filtrar por rango de precio")
-    @GetMapping("/filter-price")
-    public ResponseEntity<List<SubscriptionPlanResponseDto>> getByPriceRange(
-            @RequestParam BigDecimal min, @RequestParam BigDecimal max) {
-        return ResponseEntity.ok(planService.findPlansByPriceRange(min, max));
+    @GetMapping("/upgrade-options/{currentLimit}")
+    @Operation(summary = "Opciones de mejora", description = "Busca planes superiores al actual del usuario.")
+    public ResponseEntity<ApiResponseDto<List<SubscriptionPlanDto.Response>>> getUpgrades(@PathVariable Integer currentLimit) {
+        var data = planService.findUpgradeOptions(currentLimit);
+        return WebUtil.ok(data, "Opciones de escalabilidad encontradas.");
     }
 
-    @Operation(summary = "Métrica SaaS: Usuarios por plan")
     @GetMapping("/{id}/active-users")
-    public ResponseEntity<Long> getActiveUserCount(@PathVariable Integer id) {
-        return ResponseEntity.ok(planService.countActiveUsersByPlan(id));
+    @Operation(summary = "Métrica SaaS", description = "Cuenta cuántos usuarios están suscritos a este plan.")
+    public ResponseEntity<ApiResponseDto<Long>> getActiveUsers(@PathVariable Integer id) {
+        var count = planService.countActiveUsersByPlan(id);
+        return WebUtil.ok(count, "Conteo de usuarios por plan completado.");
     }
 }

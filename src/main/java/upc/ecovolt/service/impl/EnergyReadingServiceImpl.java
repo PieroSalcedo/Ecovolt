@@ -2,14 +2,13 @@ package upc.ecovolt.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import upc.ecovolt.entity.Device;
 import upc.ecovolt.entity.EnergyReading;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingMapper;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingRequestDto;
-import upc.ecovolt.mapping.dto.energyreadingdto.EnergyReadingResponseDto;
+import upc.ecovolt.mapping.dto.*;
 import upc.ecovolt.repository.DeviceRepository;
 import upc.ecovolt.repository.EnergyReadingRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
@@ -30,20 +29,19 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
     private final EnergyReadingMapper readingMapper;
 
     /**
-     * MÉTODO DE CIBERSEGURIDAD: Valida si el usuario es dueño del hardware
-     * antes de ver o insertar telemetría.
+     * CIBERSEGURIDAD: Valida si el usuario actual tiene acceso a la telemetría del hardware.
      */
-    private void validateDeviceOwnership(Long deviceId) {
+    private void validateDeviceOwnership(Long idDevice) {
         var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         boolean isStaff = principal.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_ANALYST"));
 
         if (!isStaff) {
-            Device device = deviceRepository.findById(deviceId)
+            Device device = deviceRepository.findById(idDevice)
                     .orElseThrow(() -> new RuntimeException("Error: Sensor no encontrado."));
-            if (!device.getRoom().getHome().getUser().getId().equals(principal.getIdUser())) {
-                log.error("VIOLACIÓN DE PRIVACIDAD: El usuario {} intentó acceder a la telemetría del sensor ID: {}",
-                        principal.getLogin(), deviceId);
+            if (!device.getRoom().getHome().getUser().getIdUser().equals(principal.getIdUser())) {
+                log.error("VIOLACIÓN DE PRIVACIDAD: Usuario {} intentó acceder a datos del sensor {}",
+                        principal.getLogin(), idDevice);
                 throw new RuntimeException("Acceso denegado: No tienes permisos sobre este dispositivo.");
             }
         }
@@ -51,85 +49,127 @@ public class EnergyReadingServiceImpl implements EnergyReadingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnergyReadingResponseDto> findAllReadings() {
+    public List<ReporteCasaDTO> reporteConsumoPorCasa(Long idUser) {
+        return readingRepository.reporteConsumoPorCasa(idUser);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReporteCuartoDTO> reporteConsumoPorCuarto(Long idHome) {
+        return readingRepository.reporteConsumoPorCuarto(idHome);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReporteDispositivoDTO> reporteConsumoPorDispositivo(Long idRoom) {
+        log.info("Generando reporte de consumo para el cuarto ID: {}", idRoom);
+        return readingRepository.reporteConsumoPorDispositivo(idRoom);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EnergyReadingDto.Response> findAllReadings() {
         return readingMapper.toResponseDtoList(readingRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<EnergyReadingResponseDto> findReadingById(Long id) {
-        // En un sistema real, primero buscaríamos el ID del dispositivo de esta lectura
-        return readingRepository.findById(id).map(readingMapper::toResponseDto);
+    public Optional<EnergyReadingDto.Response> findReadingById(Long idReading) {
+        return readingRepository.findById(idReading).map(readingMapper::toResponseDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal sumTotalHome(Long idHome) {
+        // Si el repo devuelve vacío, orElse pone 0.00
+        return readingRepository.sumTotalHome(idHome).orElse(BigDecimal.ZERO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal sumTotalRoom(Long idRoom) {
+        return readingRepository.sumTotalRoom(idRoom).orElse(BigDecimal.ZERO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal sumTotalDevice(Long idDevice) {
+        return readingRepository.sumTotalDevice(idDevice).orElse(BigDecimal.ZERO);
     }
 
     @Override
     @Transactional
-    public EnergyReadingResponseDto saveReading(EnergyReadingRequestDto requestDto) {
-        // CIBERSEGURIDAD: Validar que el equipo que envía el dato pertenece al usuario
-        validateDeviceOwnership(requestDto.getDeviceId());
+    public EnergyReadingDto.Response saveReading(EnergyReadingDto.Request requestDto) {
+        // CIBERSEGURIDAD: Solo el dueño del dispositivo puede inyectar lecturas
+        validateDeviceOwnership(requestDto.getIdDevice());
 
-        log.info("IOT INGESTION: Registrando {}W para sensor ID: {}", requestDto.getWattage(), requestDto.getDeviceId());
+        log.debug("IOT INGESTION: {}W del sensor ID: {}", requestDto.getWattage(), requestDto.getIdDevice());
 
         EnergyReading entity = readingMapper.toEntity(requestDto);
-        var device = deviceRepository.findById(requestDto.getDeviceId()).get();
-        entity.setDevice(device);
+        Device device = deviceRepository.findById(requestDto.getIdDevice())
+                .orElseThrow(() -> new RuntimeException("Dispositivo no encontrado para la lectura."));
 
-        // Las lecturas son inmutables, solo llevan fechaRegistro
+        entity.setDevice(device);
+        entity.setStatus(1);
+
         return readingMapper.toResponseDto(readingRepository.save(entity));
     }
 
     @Override
     @Transactional
-    public void delete(Long id) {
-        // Solo ADMIN (por interfaz)
-        readingRepository.deleteById(id);
+    public void delete(Long idReading) {
+        // Auditoría mínima para borrado de telemetría (acción crítica)
+        log.warn("AUDIT: Eliminando lectura de energía ID: {}", idReading);
+        readingRepository.deleteById(idReading);
     }
 
-    // --- INTELIGENCIA ENERGÉTICA CON VALIDACIÓN DE PROPIEDAD ---
+    // --- MÉTODOS DE ANALÍTICA ENERGÉTICA ---
 
     @Override
     @Transactional(readOnly = true)
     public BigDecimal sumWattageByDeviceAndPeriod(Long idDevice, LocalDateTime start, LocalDateTime end) {
         validateDeviceOwnership(idDevice);
-        BigDecimal total = readingRepository.sumWattageByDeviceAndPeriod(idDevice, start, end);
-        return (total != null) ? total : BigDecimal.ZERO;
+        return readingRepository.sumWattageByDeviceAndPeriod(idDevice, start, end)
+                .orElse(BigDecimal.ZERO);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Double getAverageVoltageByDevice(Long idDevice) {
         validateDeviceOwnership(idDevice);
-        return readingRepository.getAverageVoltageByDevice(idDevice);
+        return readingRepository.getAverageVoltageByDevice(idDevice)
+                .orElse(0.0);
     }
 
     @Override
     @Transactional(readOnly = true)
     public BigDecimal sumTotalConsumptionByHome(Long idHome, LocalDateTime start, LocalDateTime end) {
-        // Aquí se podría añadir validateHomeOwnership(idHome) similar al de HomeService
-        BigDecimal total = readingRepository.sumTotalConsumptionByHome(idHome, start, end);
-        return (total != null) ? total : BigDecimal.ZERO;
+        // La validación de propiedad de casa se asume en una capa superior o se puede añadir aquí
+        return readingRepository.sumTotalConsumptionByHome(idHome, start, end)
+                .orElse(BigDecimal.ZERO);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnergyReadingResponseDto> findLatestReadingsByDevice(Long idDevice) {
+    public List<EnergyReadingDto.Response> findLatestReadingsByDevice(Long idDevice, int limit) {
         validateDeviceOwnership(idDevice);
-        return readingMapper.toResponseDtoList(readingRepository.findLatestReadingsByDevice(idDevice));
+        // Usamos PageRequest para limitar la carga al Frontend (ej. últimas 20 lecturas para el gráfico)
+        var pageable = PageRequest.of(0, limit);
+        var readings = readingRepository.findByDevice_IdDeviceOrderByReadingAtDesc(idDevice, pageable);
+        return readingMapper.toResponseDtoList(readings);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnergyReadingResponseDto> findAbnormalConsumption(Long idDevice, BigDecimal threshold) {
+    public List<EnergyReadingDto.Response> findAbnormalConsumption(Long idDevice, BigDecimal threshold) {
         validateDeviceOwnership(idDevice);
-        log.warn("AUDIT: Buscando fugas de energía en dispositivo {}", idDevice);
         return readingMapper.toResponseDtoList(readingRepository.findAbnormalConsumption(idDevice, threshold));
     }
 
     @Override
     @Transactional(readOnly = true)
     public BigDecimal sumConsumptionByCategory(Long idHome, String categoryDescription, LocalDateTime start, LocalDateTime end) {
-        // REGLA DE NEGOCIO: Reporte para Pie Chart
-        BigDecimal total = readingRepository.sumConsumptionByCategory(idHome, categoryDescription, start, end);
-        return (total != null) ? total : BigDecimal.ZERO;
+        return readingRepository.sumConsumptionByCategory(idHome, categoryDescription, start, end)
+                .orElse(BigDecimal.ZERO);
     }
 }

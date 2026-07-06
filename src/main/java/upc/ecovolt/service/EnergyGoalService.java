@@ -1,35 +1,25 @@
 package upc.ecovolt.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.mapping.dto.energygoaldto.EnergyGoalRequestDto;
-import upc.ecovolt.mapping.dto.energygoaldto.EnergyGoalResponseDto;
+import upc.ecovolt.mapping.dto.EnergyGoalDto;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface EnergyGoalService {
 
-    // --- ACCESO ADMINISTRATIVO (STAFF) ---
-    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR', 'ANALYST')")
-    List<EnergyGoalResponseDto> findAll();
+    List<EnergyGoalDto.Response> findAll();
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
-    List<EnergyGoalResponseDto> findCriticalGoals(Integer threshold);
+    EnergyGoalDto.Response findActiveByTypeAndId(String type, Long id);
 
-    // --- ACCESO POR PROPIEDAD (OWNERSHIP) ---
+    List<EnergyGoalDto.Response> findCriticalGoals(Integer threshold);
 
-    @PreAuthorize("isAuthenticated()")
-    Optional<EnergyGoalResponseDto> findById(Integer id);
+    Optional<EnergyGoalDto.Response> findById(Integer idGoal);
 
-    @PreAuthorize("isAuthenticated()") // La validación del dueño de la casa se hace en el Impl
-    EnergyGoalResponseDto save(EnergyGoalRequestDto requestDto);
+    EnergyGoalDto.Response save(EnergyGoalDto.Request requestDto);
 
-    @PreAuthorize("isAuthenticated()")
-    EnergyGoalResponseDto update(Integer id, EnergyGoalRequestDto requestDto);
+    EnergyGoalDto.Response update(Integer idGoal, EnergyGoalDto.Request requestDto);
 
-    @PreAuthorize("isAuthenticated()")
-    void delete(Integer id);
+    void delete(Integer idGoal);
 
-    @PreAuthorize("isAuthenticated()")
-    List<EnergyGoalResponseDto> findActiveGoalsByHome(Long idHome);
+    List<EnergyGoalDto.Response> findActiveGoalsByHome(Long idHome);
 }

@@ -1,46 +1,37 @@
 package upc.ecovolt.service;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import upc.ecovolt.entity.Option;
-import upc.ecovolt.entity.Role;
-import upc.ecovolt.mapping.dto.userdto.UserRequestDto;
-import upc.ecovolt.mapping.dto.userdto.UserResponseDto;
+import upc.ecovolt.mapping.dto.UserDto;
+import upc.ecovolt.mapping.dto.OptionDto;
+import upc.ecovolt.mapping.dto.RoleDto;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface UserService {
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
-    List<UserResponseDto> findAllUsers();
+    void updateUserPlan(Long idUser, Integer idPlan);
 
-    // Regla Especial: El Admin entra, o el usuario cuyo ID coincida con el autenticado
-    @PreAuthorize("hasRole('ADMIN') or #id == principal.idUser")
-    Optional<UserResponseDto> findUserById(Long id);
+    List<UserDto.Response> findAllUsers();
 
-    @PreAuthorize("permitAll()") // Registro libre
-    UserResponseDto saveUser(UserRequestDto requestDto);
+    Optional<UserDto.Response> findUserById(Long idUser);
 
-    @PreAuthorize("hasRole('ADMIN') or #id == principal.idUser")
-    UserResponseDto updateUser(Long id, UserRequestDto requestDto);
+    UserDto.Response saveUser(UserDto.Request requestDto);
 
-    @PreAuthorize("hasRole('ADMIN')")
-    void delete(Long id);
+    UserDto.Response updateUser(Long idUser, UserDto.Request requestDto);
 
-    // --- REGLAS DE NEGOCIO ---
+    void delete(Long idUser);
 
-    @PreAuthorize("hasRole('ADMIN')")
-    Optional<UserResponseDto> findByLogin(String login);
+    Optional<UserDto.Response> findByLogin(String login);
 
-    @PreAuthorize("isAuthenticated()") // Cualquiera logueado puede ver su propio menú
-    List<Option> traerEnlacesDeUsuario(Long idUser);
+    /*
+     * REGLA DE SEGURIDAD DINÁMICA:
+     * Obtiene los menús (enlaces) permitidos para el usuario según sus roles.
+     */
+    List<OptionDto.Response> findNavOptionsByUserId(Long idUser);
 
-    @PreAuthorize("hasRole('ADMIN')") // Ver roles es una tarea administrativa
-    List<Role> traerRolesDeUsuario(Long idUser);
+    List<RoleDto.Response> findRolesByUserId(Long idUser);
 
-    @PreAuthorize("isAuthenticated()")
     Integer getDeviceLimitByUserId(Long idUser);
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
     long countUsersByCity(String city);
 }

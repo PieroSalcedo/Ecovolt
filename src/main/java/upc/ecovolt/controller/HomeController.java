@@ -1,116 +1,111 @@
 package upc.ecovolt.controller;
-
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import upc.ecovolt.entity.Home;
+import upc.ecovolt.entity.User;
 import upc.ecovolt.mapping.dto.ApiResponseDto;
-import upc.ecovolt.mapping.dto.homedto.HomeRequestDto;
-import upc.ecovolt.mapping.dto.homedto.HomeResponseDto;
+import upc.ecovolt.mapping.dto.HomeDto;
+import upc.ecovolt.security.UsuarioPrincipal;
 import upc.ecovolt.service.HomeService;
 import upc.ecovolt.util.AppSettings;
+import upc.ecovolt.util.WebUtil;
 
-import java.math.BigDecimal;
 import java.util.List;
 
-@Tag(name = "Homes", description = "Endpoints para la gestión de viviendas, tarifas eléctricas y auditoría de inventario")
+@Tag(name = "Homes", description = "Gestión de propiedades")
 @RestController
 @RequestMapping("/api/v1/homes")
 @RequiredArgsConstructor
 @CrossOrigin(origins = AppSettings.URL_CROSS_ORIGIN)
+@Slf4j
 public class HomeController {
 
     private final HomeService homeService;
 
-    // --- ACCIONES CON NOTIFICACIÓN (POST, PUT, DELETE) ---
+    @GetMapping("/consultaDinamica")
+    public ResponseEntity<ApiResponseDto<List<HomeDto.Response>>> consulta(
+            @RequestParam(defaultValue = "") String alias,
+            @RequestParam(defaultValue = "") String city,
+            @RequestParam(defaultValue = "-1") int idTipo) {
 
-    @Operation(summary = "Registrar una nueva propiedad", description = "Crea una vivienda vinculándola al usuario autenticado.")
-    @ApiResponse(responseCode = "201", description = "Vivienda registrada exitosamente")
-    @PostMapping
-    public ResponseEntity<ApiResponseDto<HomeResponseDto>> create(@Valid @RequestBody HomeRequestDto request) {
+        UsuarioPrincipal principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        // Llamamos al service que ahora devuelve DTOs
+        List<HomeDto.Response> listaDto = homeService.consultaHomeDinamica(principal.getIdUser(), alias, city, idTipo);
+
+        return WebUtil.ok(listaDto, "Viviendas cargadas con éxito");
+    }
+
+    // --- REGISTRO ---
+    @PostMapping("/registra")
+    @Operation(summary = "Registrar vivienda", description = "Si es Customer, se ignora el idUser y se asigna el suyo.")
+    public ResponseEntity<ApiResponseDto<HomeDto.Response>> save(@RequestBody HomeDto.Request request) {
+        var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        boolean isAdmin = principal.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        // LÓGICA DE NEGOCIO: Seguridad de asignación
+        if (!isAdmin) {
+            request.setIdUser(principal.getIdUser());
+        }
+
         var data = homeService.saveHome(request);
-
-        return new ResponseEntity<>(ApiResponseDto.<HomeResponseDto>builder()
-                .title("¡Vivienda Registrada!")
-                .message("La propiedad '" + data.getAlias() + "' ha sido vinculada correctamente a su cuenta.")
-                .status("SUCCESS")
-                .data(data)
-                .build(), HttpStatus.CREATED);
+        return WebUtil.created(data, "Vivienda '" + data.getAlias() + "' registrada con éxito.");
     }
 
-    @Operation(summary = "Actualizar datos de la vivienda", description = "Permite modificar la dirección, el alias o la tarifa de consumo (kWh).")
+    // --- ACTUALIZACIÓN ---
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<HomeResponseDto>> update(
-            @Parameter(description = "ID de la vivienda a modificar", example = "1") @PathVariable Long id,
-            @Valid @RequestBody HomeRequestDto request) {
-
+    @Operation(summary = "Actualizar datos de vivienda")
+    public ResponseEntity<ApiResponseDto<HomeDto.Response>> update(@PathVariable Long id, @RequestBody HomeDto.Request request) {
         var data = homeService.updateHome(id, request);
-
-        return ResponseEntity.ok(ApiResponseDto.<HomeResponseDto>builder()
-                .title("Información Actualizada")
-                .message("Los cambios en '" + data.getAlias() + "' se guardaron con éxito.")
-                .status("SUCCESS")
-                .data(data)
-                .build());
+        return WebUtil.ok(data, "Datos de la propiedad actualizados.");
     }
 
-    @Operation(summary = "Eliminar una vivienda", description = "Retira la propiedad del sistema. Esta acción es irreversible.")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<Void>> delete(
-            @Parameter(description = "ID de la vivienda a eliminar", example = "1") @PathVariable Long id) {
-
+    // --- ELIMINACIÓN ---
+    @DeleteMapping("/elimina/{id}") // Asegúrate de que diga "/elimina/{id}"
+    public ResponseEntity<ApiResponseDto<Void>> delete(@PathVariable Long id) {
+        log.info("Eliminando vivienda con ID: {}", id);
         homeService.delete(id);
-
-        return ResponseEntity.ok(ApiResponseDto.<Void>builder()
-                .title("Propiedad Eliminada")
-                .message("La vivienda y sus configuraciones asociadas han sido removidas del sistema.")
-                .status("SUCCESS")
-                .build());
+        return WebUtil.ok(null, "Vivienda eliminada correctamente");
     }
 
-    // --- CONSULTAS DE DATOS (DATA DIRECTA) ---
+    // --- CONSULTAS ---
 
-    @Operation(summary = "Listar todas las viviendas (Staff)", description = "ACCESO RESTRINGIDO: Solo Admin, Auditor y Analista.")
-    @GetMapping
-    public ResponseEntity<List<HomeResponseDto>> getAll() {
-        return ResponseEntity.ok(homeService.findAllHomes());
+    @GetMapping("/my-list")
+    @Operation(summary = "Listar MIS casas", description = "Endpoint principal para el Dashboard del usuario logueado.")
+    public ResponseEntity<ApiResponseDto<List<HomeDto.Response>>> getMyHomes() {
+        var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        var data = homeService.findActiveHomesByUser(principal.getIdUser());
+        return WebUtil.ok(data, "Lista de propiedades cargada.");
     }
 
-    @Operation(summary = "Obtener vivienda por ID", description = "Busca detalles técnicos de una propiedad.")
     @GetMapping("/{id}")
-    public ResponseEntity<HomeResponseDto> getById(@PathVariable Long id) {
+    @Operation(summary = "Obtener detalle de vivienda")
+    public ResponseEntity<ApiResponseDto<HomeDto.Response>> getById(@PathVariable Long id) {
         return homeService.findHomeById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .map(home -> WebUtil.ok(home, "Detalle de la casa"))
+                .orElseThrow(() -> new RuntimeException("No se encontró la propiedad"));
     }
 
-    @Operation(summary = "Listar viviendas por Usuario", description = "Obtiene todas las casas que pertenecen a un cliente específico.")
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<HomeResponseDto>> getByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(homeService.findActiveHomesByUser(userId));
-    }
-
-    @Operation(summary = "Auditoría de hardware por casa", description = "Retorna el conteo total de dispositivos instalados en toda la casa.")
     @GetMapping("/{id}/device-count")
-    public ResponseEntity<Long> getDeviceCount(@PathVariable Long id) {
-        return ResponseEntity.ok(homeService.countTotalDevicesByHome(id));
+    @Operation(summary = "Total de dispositivos", description = "Muestra cuántos equipos IoT hay en toda la casa.")
+    public ResponseEntity<ApiResponseDto<Long>> getDeviceCount(@PathVariable Long id) {
+        var count = homeService.countTotalDevicesByHome(id);
+        return WebUtil.ok(count, "Conteo de inventario completado.");
     }
 
-    @Operation(summary = "Filtrar por tarifa elevada", description = "Analítica: Busca hogares con costos de energía críticos.")
-    @GetMapping("/high-tariff")
-    public ResponseEntity<List<HomeResponseDto>> getByHighTariff(@RequestParam BigDecimal threshold) {
-        return ResponseEntity.ok(homeService.findHomesByHighTariff(threshold));
-    }
-
-    @Operation(summary = "Búsqueda por Alias", description = "Busca una propiedad por su nombre amigable.")
-    @GetMapping("/search")
-    public ResponseEntity<List<HomeResponseDto>> getByAlias(
-            @RequestParam String alias, @RequestParam Long userId) {
-        return ResponseEntity.ok(homeService.findByAliasAndUserId(alias, userId));
+    // Solo para el ADMIN: Listar todas las casas del sistema
+    @GetMapping("/admin/all")
+    @Operation(summary = "Listar todas (ADMIN)")
+    public ResponseEntity<ApiResponseDto<List<HomeDto.Response>>> getAllAdmin() {
+        var data = homeService.findAllHomes();
+        return WebUtil.ok(data, "Inventario global de viviendas.");
     }
 }

@@ -5,23 +5,28 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import upc.ecovolt.mapping.dto.ApiResponseDto; // Importante
+import upc.ecovolt.mapping.dto.ApiResponseDto;
+import upc.ecovolt.mapping.dto.UserDto;
+import upc.ecovolt.mapping.dto.OptionDto;
 import upc.ecovolt.mapping.dto.auth.JwtResponseDto;
 import upc.ecovolt.mapping.dto.auth.LoginRequestDto;
 import upc.ecovolt.security.JwtProvider;
 import upc.ecovolt.security.UsuarioPrincipal;
+import upc.ecovolt.service.UserService;
 import upc.ecovolt.util.AppSettings;
+import upc.ecovolt.util.WebUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Tag(name = "Authentication", description = "Endpoint para el inicio de sesión y generación de Tokens JWT")
+@Tag(name = "Authentication", description = "Endpoints para acceso y registro al ecosistema Ecovolt")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -31,45 +36,44 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
+    private final UserService userService;
 
-    @Operation(summary = "Iniciar sesión", description = "Autentica al usuario y devuelve un mensaje de bienvenida con su token.")
+    @Operation(summary = "Iniciar sesión", description = "Autentica al usuario y devuelve el Token JWT.")
     @PostMapping("/login")
     public ResponseEntity<ApiResponseDto<JwtResponseDto>> login(@Valid @RequestBody LoginRequestDto loginDto) {
-        log.info("Intento de login para el usuario: {}", loginDto.getLogin());
+        log.info("LOGIN: Intento de acceso para '{}'", loginDto.getLogin());
 
-        // 1. Autenticación con Spring Security
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDto.getLogin(), loginDto.getPassword())
         );
 
-        // 2. Establecer el contexto de seguridad
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // 3. Generar el Token JWT
         String jwt = jwtProvider.generateToken(authentication);
 
-        // 4. Obtener datos del usuario logueado
         UsuarioPrincipal principal = (UsuarioPrincipal) authentication.getPrincipal();
         List<String> roles = principal.getAuthorities().stream()
                 .map(auth -> auth.getAuthority())
                 .collect(Collectors.toList());
 
-        // 5. Construir el objeto de datos (Token + Info)
+        List<OptionDto.Response> opciones = userService.findNavOptionsByUserId(principal.getIdUser());
+
         JwtResponseDto jwtData = new JwtResponseDto(
-                jwt,
-                "Bearer",
-                principal.getIdUser(),
-                principal.getLogin(),
-                principal.getFullName(),
-                roles
+                jwt, "Bearer", principal.getIdUser(), principal.getLogin(), principal.getFullName(), roles, opciones
         );
 
-        // 6. Retornar la Respuesta Enriquecida con Notificación
         return ResponseEntity.ok(ApiResponseDto.<JwtResponseDto>builder()
                 .title("¡Inicio de Sesión Exitoso!")
-                .message("Bienvenido(a) " + principal.getFullName() + ". Acceso concedido al ecosistema EcoVolt.")
+                .message("Bienvenido(a) " + principal.getFullName() + ". Acceso concedido.")
                 .status("SUCCESS")
                 .data(jwtData)
                 .build());
+    }
+
+    @Operation(summary = "Registrar nuevo cliente")
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponseDto<UserDto.Response>> register(@RequestBody UserDto.Request request) {
+        // Llama al service que encripta la clave y asigna el Plan ID 1
+        var newUser = userService.saveUser(request);
+        return WebUtil.created(newUser, "¡Cuenta creada con éxito! Ya puedes iniciar sesión.");
     }
 }

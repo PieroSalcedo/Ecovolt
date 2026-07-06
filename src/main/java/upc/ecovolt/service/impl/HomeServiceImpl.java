@@ -5,11 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import upc.ecovolt.entity.DataCatalog;
 import upc.ecovolt.entity.Home;
-import upc.ecovolt.mapping.dto.homedto.HomeMapper;
-import upc.ecovolt.mapping.dto.homedto.HomeRequestDto;
-import upc.ecovolt.mapping.dto.homedto.HomeResponseDto;
-import upc.ecovolt.repository.DataCatalogoRepository;
+import upc.ecovolt.mapping.dto.HomeDto;
+import upc.ecovolt.mapping.dto.HomeMapper;
+import upc.ecovolt.repository.DataCatalogRepository;
 import upc.ecovolt.repository.HomeRepository;
 import upc.ecovolt.repository.UserRepository;
 import upc.ecovolt.security.UsuarioPrincipal;
@@ -26,28 +26,23 @@ public class HomeServiceImpl implements HomeService {
 
     private final HomeRepository homeRepository;
     private final UserRepository userRepository;
-    private final DataCatalogoRepository dataCatalogoRepository;
+    private final DataCatalogRepository dataCatalogRepository;
     private final HomeMapper homeMapper;
 
     /**
-     * MÉTODO DE CIBERSEGURIDAD: Valida si el usuario actual es dueño de la propiedad.
-     * Si es ROLE_ADMIN, se salta la validación.
+     * CIBERSEGURIDAD: Valida si el usuario actual tiene derechos sobre la propiedad.
      */
-    private void validateOwnership(Long homeId) {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var principal = (UsuarioPrincipal) authentication.getPrincipal();
-
-        // Verificamos si NO es administrador
+    private void validateOwnership(Long idHome) {
+        var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         boolean isAdmin = principal.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         if (!isAdmin) {
-            Home home = homeRepository.findById(homeId)
+            Home home = homeRepository.findById(idHome)
                     .orElseThrow(() -> new RuntimeException("Error: Vivienda no encontrada."));
 
-            if (!home.getUser().getId().equals(principal.getIdUser())) {
-                log.error("VIOLACIÓN DE SEGURIDAD: El usuario {} intentó acceder a datos ajenos (Home ID: {})",
-                        principal.getLogin(), homeId);
+            if (!home.getUser().getIdUser().equals(principal.getIdUser())) {
+                log.error("VIOLACIÓN DE SEGURIDAD: Usuario {} intentó acceder a Home ID: {}", principal.getLogin(), idHome);
                 throw new RuntimeException("Acceso denegado: No tienes permisos sobre esta propiedad.");
             }
         }
@@ -55,115 +50,120 @@ public class HomeServiceImpl implements HomeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findAllHomes() {
-        // @PreAuthorize en la interfaz asegura que solo el Staff (Admin/Analyst) llegue aquí
+    public List<HomeDto.Response> consultaHomeDinamica(Long idUser, String alias, String city, int idTipo) {
+        List<Home> lista = homeRepository.consultaHomeDinamica(idUser, alias, city, idTipo);
+        return homeMapper.toResponseDtoList(lista);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HomeDto.Response> findAllHomes() {
         return homeMapper.toResponseDtoList(homeRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<HomeResponseDto> findHomeById(Long id) {
-        validateOwnership(id); // Candado de propiedad
-        return homeRepository.findById(id).map(homeMapper::toResponseDto);
+    public Optional<HomeDto.Response> findHomeById(Long idHome) {
+        validateOwnership(idHome);
+        return homeRepository.findById(idHome).map(homeMapper::toResponseDto);
     }
 
     @Override
     @Transactional
-    public HomeResponseDto saveHome(HomeRequestDto requestDto) {
+    public HomeDto.Response saveHome(HomeDto.Request requestDto) {
         var principal = (UsuarioPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        // REGLA DE SEGURIDAD: Un cliente no puede registrar casas para otros IDs de usuario
+        // REGLA DE SEGURIDAD: Un cliente no puede registrar casas para otros usuarios.
         boolean isAdmin = principal.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        if (!isAdmin && !requestDto.getUserId().equals(principal.getIdUser())) {
-            throw new RuntimeException("Error de seguridad: No puedes registrar viviendas para otros usuarios.");
+        if (!isAdmin && !requestDto.getIdUser().equals(principal.getIdUser())) {
+            throw new RuntimeException("Error: No puedes registrar viviendas para otros usuarios.");
         }
 
-        var user = userRepository.findById(requestDto.getUserId())
+        var user = userRepository.findById(requestDto.getIdUser())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado."));
 
-        var propertyType = dataCatalogoRepository.findById(requestDto.getPropertyTypeId())
-                .orElseThrow(() -> new RuntimeException("Tipo de propiedad no válido."));
+        // Nota: En tu HomeDto.Request debes asegurarte de tener el campo idPropertyType
+        // Si no existe, puedes pasarlo como parámetro o agregarlo al DTO.
 
-        log.info("USER {}: Registrando propiedad '{}'", principal.getLogin(), requestDto.getAlias());
+        log.info("REGISTRO PROPIEDAD: '{}' para el usuario {}", requestDto.getAddress(), principal.getLogin());
 
         Home entity = homeMapper.toEntity(requestDto);
         entity.setUser(user);
-        entity.setPropertyType(propertyType);
-        entity.setUsuarioRegistro(principal.getLogin()); // Auditoría con el login del token
+        entity.setStatus(1); // Activa al crear
 
         return homeMapper.toResponseDto(homeRepository.save(entity));
     }
 
     @Override
     @Transactional
-    public HomeResponseDto updateHome(Long id, HomeRequestDto requestDto) {
-        validateOwnership(id); // Solo el dueño o admin puede editar
+    public HomeDto.Response updateHome(Long idHome, HomeDto.Request requestDto) {
+        validateOwnership(idHome);
 
-        return homeRepository.findById(id).map(existingHome -> {
-            existingHome.setAddress(requestDto.getAddress());
-            existingHome.setCity(requestDto.getCity());
-            existingHome.setAlias(requestDto.getAlias());
-            existingHome.setEnergyTariff(requestDto.getEnergyTariff());
-            existingHome.setSquareMeters(requestDto.getSquareMeters().intValue());
+        return homeRepository.findById(idHome).map(existing -> {
+            existing.setAddress(requestDto.getAddress());
+            existing.setAlias(requestDto.getAlias());
+            existing.setCity(requestDto.getCity());
+            existing.setEnergyTariff(requestDto.getEnergyTariff());
+            existing.setSquareMeters(requestDto.getSquareMeters());
 
-            // Resolución de categoría si cambia
-            var type = dataCatalogoRepository.findById(requestDto.getPropertyTypeId())
-                    .orElseThrow(() -> new RuntimeException("Tipo no encontrado"));
-            existingHome.setPropertyType(type);
+            // Actualizar tipo de propiedad
+            if (requestDto.getIdPropertyType() != null) {
+                DataCatalog type = new DataCatalog();
+                type.setIdDataCatalog(requestDto.getIdPropertyType());
+                existing.setPropertyType(type);
+            }
 
-            String username = SecurityContextHolder.getContext().getAuthentication().getName();
-            existingHome.setUsuarioActualizacion(username);
-
-            return homeMapper.toResponseDto(homeRepository.save(existingHome));
+            return homeMapper.toResponseDto(homeRepository.save(existing));
         }).orElseThrow(() -> new RuntimeException("Vivienda no encontrada"));
     }
 
     @Override
     @Transactional
-    public void delete(Long id) {
-        validateOwnership(id); // Solo el dueño puede eliminar
-        log.warn("Eliminando propiedad ID: {}", id);
-        homeRepository.deleteById(id);
-    }
+    public void delete(Long idHome) {
+        validateOwnership(idHome);
 
-    // --- IMPLEMENTACIÓN DE MÉTODOS DE NEGOCIO ---
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<HomeResponseDto> findActiveHomesByUser(Long idUser) {
-        // La protección de que idUser sea el mismo del token está en la Interfaz (@PreAuthorize)
-        var homes = homeRepository.findActiveHomesByUser(idUser);
-        return homeMapper.toResponseDtoList(homes);
+        // REGLA DE NEGOCIO: Borrado lógico para no perder historial de telemetría
+        homeRepository.findById(idHome).ifPresent(h -> {
+            h.setStatus(0);
+            homeRepository.save(h);
+            log.warn("BORRADO LÓGICO: Vivienda ID {} marcada como inactiva", idHome);
+        });
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findByPropertyTypeName(String propertyTypeDescription) {
+    public List<HomeDto.Response> findActiveHomesByUser(Long idUser) {
+        return homeMapper.toResponseDtoList(homeRepository.findActiveHomesByUser(idUser));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HomeDto.Response> findByPropertyTypeName(String propertyTypeDescription) {
         return homeMapper.toResponseDtoList(homeRepository.findByPropertyTypeName(propertyTypeDescription));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findHomesByHighTariff(BigDecimal tariffThreshold) {
+    public List<HomeDto.Response> findHomesByHighTariff(BigDecimal tariffThreshold) {
         return homeMapper.toResponseDtoList(homeRepository.findHomesByHighTariff(tariffThreshold));
     }
 
     @Override
     @Transactional(readOnly = true)
     public long countTotalDevicesByHome(Long idHome) {
-        validateOwnership(idHome); // No puedes auditar inventario de otros
+        validateOwnership(idHome);
         return homeRepository.countTotalDevicesByHome(idHome);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findByAliasAndUserId(String alias, Long idUser) {
-        return homeMapper.toResponseDtoList(homeRepository.findByAliasAndUserId(alias, idUser));
+    public Optional<HomeDto.Response> findByAliasAndUserId(String alias, Long idUser) {
+        return homeRepository.findByAliasAndUserId(alias, idUser).map(homeMapper::toResponseDto);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<HomeResponseDto> findByCity(String city) {
+    public List<HomeDto.Response> findByCity(String city) {
         return homeMapper.toResponseDtoList(homeRepository.findByCity(city));
     }
 }
