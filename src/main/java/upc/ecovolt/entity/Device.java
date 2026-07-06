@@ -56,6 +56,9 @@ public class Device extends BaseEntity {
     @Column(name = "firmware_version", length = 50)
     private String firmwareVersion;
 
+    @Column(name = "on_off", nullable = false)
+    private Boolean onOff = false;
+
     /*
      * REGLA DE NEGOCIO: Ubicación Contextual.
      * Un dispositivo siempre debe estar ubicado en una habitación para calcular

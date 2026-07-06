@@ -43,6 +43,18 @@ public class DeviceController {
         return WebUtil.ok(lista, "Tus dispositivos han sido cargados.");
     }
 
+    @PutMapping("/{id}/cambiar-onoff")
+    @Operation(summary = "Cambiar estado ON/OFF del dispositivo")
+    public ResponseEntity<ApiResponseDto<DeviceDto.Response>> cambiarEstado(@PathVariable Long id) {
+        var data = deviceService.togglePower(id);
+
+        String mensaje = Boolean.TRUE.equals(data.getOnOff())
+                ? "Dispositivo encendido correctamente."
+                : "Dispositivo apagado correctamente.";
+
+        return WebUtil.ok(data, mensaje);
+    }
+
     @GetMapping("/consultaDinamica")
     @Operation(summary = "Consulta dinámica de dispositivos")
     public ResponseEntity<ApiResponseDto<List<DeviceDto.Response>>> consulta(

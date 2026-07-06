@@ -63,6 +63,18 @@ public class DeviceServiceImpl implements DeviceService {
         return deviceMapper.toResponseDtoList(lista);
     }
 
+    @Override
+    @Transactional
+    public DeviceDto.Response togglePower(Long idDevice) {
+        validateDeviceOwnership(idDevice);
+
+        Device device = deviceRepository.findById(idDevice).orElseThrow(() -> new RuntimeException("Dispositivo no encontrado"));
+
+        device.setOnOff(!Boolean.TRUE.equals(device.getOnOff()));
+
+        return deviceMapper.toResponseDto(deviceRepository.save(device));
+    }
+
     /**
      * CIBERSEGURIDAD: Valida propiedad sobre un dispositivo.
      */

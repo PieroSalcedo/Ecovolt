@@ -9,6 +9,7 @@ import upc.ecovolt.entity.Device;
 
 public interface DeviceRepository extends JpaRepository<Device, Long> {
 
+
     @Query("select d from Device d where " +
             "(:idHome = -1 or d.room.home.idHome = :idHome) and " +
             "(:idRoom = -1 or d.room.idRoom = :idRoom) and " +

@@ -24,5 +24,6 @@ public class DeviceDto {
         private String categoryName;  // <-- NUEVO: Para mostrar 'Línea Blanca', etc.
         private String firmwareVersion; // <-- NUEVO
         private Integer status;
+        private Boolean onOff;
     }
 }
